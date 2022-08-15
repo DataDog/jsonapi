@@ -1,0 +1,18 @@
+name: woke
+on:
+  push:
+    tags:
+      - v*
+    branches:
+      - main
+  pull_request:
+jobs:
+  woke:
+    name: woke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: woke
+        uses: get-woke/woke-action@v0
+        with:
+          fail-on-error: true
