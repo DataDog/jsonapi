@@ -30,6 +30,16 @@ func TestUnmarshal(t *testing.T) {
 			expect:      &articleComplete,
 			expectError: nil,
 		}, {
+			description: "*Article (no id)",
+			given:       articleANoIDBody,
+			do: func(body []byte) (any, error) {
+				var a Article
+				err := Unmarshal(body, &a)
+				return &a, err
+			},
+			expect:      &articleANoID,
+			expectError: nil,
+		}, {
 			description: "*Article",
 			given:       articleABody,
 			do: func(body []byte) (any, error) {
