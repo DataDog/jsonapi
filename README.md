@@ -13,7 +13,7 @@ Take a look at the [go reference](https://pkg.go.dev/github.com/DataDog/jsonapi)
 
 ## Marshaling
 
-[jsonapi.Marshal](https://pkg.go.dev/DataDog/jsonapi#Marshal)
+[jsonapi.Marshal](https://pkg.go.dev/github.com/DataDog/jsonapi#Marshal)
 
 ```go
 type Article struct {
@@ -42,7 +42,7 @@ fmt.Println("%s", string(b))
 
 ## Unmarshaling
 
-[jsonapi.Unmarshal](https://pkg.go.dev/DataDog/jsonapi#Marshal)
+[jsonapi.Unmarshal](https://pkg.go.dev/github.com/DataDog/jsonapi#Marshal)
 
 ```go
 body := `{"data":[{"id":"1","type":"articles","attributes":{"title":"Hello World"}}]}`
@@ -78,12 +78,12 @@ Like [encoding/json](https://pkg.go.dev/encoding/json) jsonapi is primarily cont
 
 ## Functional Options
 
-Both [jsonapi.Marshal](https://pkg.go.dev/DataDog/jsonapi#Marshal) and [jsonapi.Unmarshal](https://pkg.go.dev/DataDog/jsonapi#Unmarshal) take functional options.
+Both [jsonapi.Marshal](https://pkg.go.dev/github.com/DataDog/jsonapi#Marshal) and [jsonapi.Unmarshal](https://pkg.go.dev/github.com/DataDog/jsonapi#Unmarshal) take functional options.
 
 | Option | Supports |
 | --- | --- |
-| [jsonapi.MarshalOption](https://pkg.go.dev/DataDog/jsonapi#MarshalOption) | [meta](https://pkg.go.dev/DataDog/jsonapi#MarshalMeta), [json:api](https://pkg.go.dev/DataDog/jsonapi#MarshalJSONAPI), [includes](https://pkg.go.dev/DataDog/jsonapi#MarshalInclude), [document links](https://pkg.go.dev/DataDog/jsonapi#MarshalLinks), [sparse fieldsets](https://pkg.go.dev/DataDog/jsonapi#MarshalFields) |
-| [jsonapi.UnmarshalOption](https://pkg.go.dev/DataDog/jsonapi#UnmarshalOption) | [meta](https://pkg.go.dev/DataDog/jsonapi#UnmarshalMeta) |
+| [jsonapi.MarshalOption](https://pkg.go.dev/github.com/DataDog/jsonapi#MarshalOption) | [meta](https://pkg.go.dev/github.com/DataDog/jsonapi#MarshalMeta), [json:api](https://pkg.go.dev/github.com/DataDog/jsonapi#MarshalJSONAPI), [includes](https://pkg.go.dev/github.com/DataDog/github.com/jsonapi#MarshalInclude), [document links](https://pkg.go.dev/github.com/DataDog/jsonapi#MarshalLinks), [sparse fieldsets](https://pkg.go.dev/github.com/DataDog/jsonapi#MarshalFields) |
+| [jsonapi.UnmarshalOption](https://pkg.go.dev/github.com/DataDog/jsonapi#UnmarshalOption) | [meta](https://pkg.go.dev/github.com/DataDog/jsonapi#UnmarshalMeta) |
 
 ## Non-String Identifiers
 
@@ -92,17 +92,17 @@ Both [jsonapi.Marshal](https://pkg.go.dev/DataDog/jsonapi#Marshal) and [jsonapi.
 | Context | Interface |
 | --- | --- |
 | Marshal | [fmt.Stringer](https://pkg.go.dev/fmt#Stringer) |
-| Marshal | [jsonapi.MarshalIdentifier](https://pkg.go.dev/DataDog/jsonapi#MarshalIdentifier) |
-| Unmarshal | [jsonapi.UnmarshalIdentifier](https://pkg.go.dev/DataDog/jsonapi#UnmarshalIdentifier) |
+| Marshal | [jsonapi.MarshalIdentifier](https://pkg.go.dev/github.com/DataDog/jsonapi#MarshalIdentifier) |
+| Unmarshal | [jsonapi.UnmarshalIdentifier](https://pkg.go.dev/github.com/DataDog/jsonapi#UnmarshalIdentifier) |
 
 ## Links
 
-[Links](https://jsonapi.org/format/1.0/#document-links) are supported via two interfaces and the [Link](https://pkg.go.dev/DataDog/jsonapi#Link) type. To include links you must implement one or both of the following interfaces.
+[Links](https://jsonapi.org/format/1.0/#document-links) are supported via two interfaces and the [Link](https://pkg.go.dev/github.com/DataDog/jsonapi#Link) type. To include links you must implement one or both of the following interfaces.
 
 | Type | Interface |
 | --- | --- |
-| [Resource Object Link](https://jsonapi.org/format/1.0/#document-resource-object-links) | [Linkable](https://pkg.go.dev/DataDog/jsonapi#Linkable) |
-| [Resource Object Related Resource Link](https://jsonapi.org/format/1.0/#document-resource-object-related-resource-links) | [LinkableRelation](https://pkg.go.dev/DataDog/jsonapi#LinkableRelation) |
+| [Resource Object Link](https://jsonapi.org/format/1.0/#document-resource-object-links) | [Linkable](https://pkg.go.dev/github.com/DataDog/jsonapi#Linkable) |
+| [Resource Object Related Resource Link](https://jsonapi.org/format/1.0/#document-resource-object-related-resource-links) | [LinkableRelation](https://pkg.go.dev/github.com/DataDog/jsonapi#LinkableRelation) |
 
 # Alternatives
 
