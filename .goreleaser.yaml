@@ -1,4 +1,4 @@
 builds:
-  skip: true
+  - skip: true
 changelog:
   sort: asc
