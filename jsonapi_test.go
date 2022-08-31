@@ -20,6 +20,7 @@ var (
 
 	// articles
 	articleA        = Article{ID: "1", Title: "A"}
+	articleANoID    = Article{Title: "A"}
 	articleB        = Article{ID: "2", Title: "B"}
 	articlesAB      = []Article{articleA, articleB}
 	articlesABPtr   = []*Article{&articleA, &articleB}
@@ -73,6 +74,7 @@ var (
 	// article bodies
 	emptyBody                         = `{"data":[]}`
 	articleABody                      = `{"data":{"type":"articles","id":"1","attributes":{"title":"A"}}}`
+	articleANoIDBody                  = `{"data":{"type":"articles","attributes":{"title":"A"}}}`
 	articleAInvalidTypeBody           = `{"data":{"type":"not-articles","id":"1","attributes":{"title":"A"}}}`
 	articleOmitTitleFullBody          = `{"data":{"type":"articles","id":"1"}}`
 	articleOmitTitlePartialBody       = `{"data":{"type":"articles","id":"1","attributes":{"subtitle":"A"}}}`
