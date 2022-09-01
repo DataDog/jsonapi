@@ -1,11 +1,22 @@
 [![Go Reference](https://pkg.go.dev/badge/github.com/DataDog/jsonapi.svg)](https://pkg.go.dev/github.com/DataDog/jsonapi)
 [![test](https://github.com/DataDog/jsonapi/actions/workflows/test.yml/badge.svg)](https://github.com/DataDog/jsonapi/actions/workflows/test.yml)
 [![golangci-lint](https://github.com/DataDog/jsonapi/actions/workflows/lint.yml/badge.svg)](https://github.com/DataDog/jsonapi/actions/workflows/lint.yml)
+![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/DataDog/jsonapi)
 
 jsonapi
 -----
 
 Package jsonapi implements a marshaler/unmarshaler for [JSON:API v1.0](https://jsonapi.org/format/1.0).
+
+# Version
+
+This package is in production use at [DataDog](https://www.datadoghq.com/) and should be considered stable and production ready.
+
+We follow [semver](https://semver.org/) are reserving the `v1.0.0` release until:
+
+- [JSON:API v1.1](https://jsonapi.org/format/1.1/) is released and we evaluate any breaking changes needed (unlikely)
+- Community adoption and feedback are evaluated
+- Continued internal use lets us gain more experience with the package
 
 # Quickstart
 
