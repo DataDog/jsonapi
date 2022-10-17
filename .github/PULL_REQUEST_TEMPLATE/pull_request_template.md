@@ -3,7 +3,7 @@
 https://github.com/DataDog/jsonapi/issues/{ISSUE_NUMBER}
 
 **Description**
-A clear and concise description of what this contribution includes.
+_A clear and concise description of what this contribution includes._
 
 **Additional context**
-Add any other context or screenshots about the contribution.
+_Add any other context or screenshots about the contribution._

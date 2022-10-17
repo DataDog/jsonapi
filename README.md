@@ -12,7 +12,7 @@ Package jsonapi implements a marshaler/unmarshaler for [JSON:API v1.0](https://j
 
 This package is in production use at [DataDog](https://www.datadoghq.com/) and should be considered stable and production ready.
 
-We follow [semver](https://semver.org/) are reserving the `v1.0.0` release until:
+We follow [semver](https://semver.org/) and are reserving the `v1.0.0` release until:
 
 - [JSON:API v1.1](https://jsonapi.org/format/1.1/) is released and we evaluate any breaking changes needed (unlikely)
 - Community adoption and feedback are evaluated
