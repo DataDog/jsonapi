@@ -4,15 +4,7 @@ package jsonapi
 import (
 	"encoding/json"
 	"fmt"
-	"regexp"
 )
-
-var dataArrayRegex *regexp.Regexp
-
-func init() {
-	// matches "data":[ (ignoring any space between : and [)
-	dataArrayRegex = regexp.MustCompile(`"data":\s*\[`)
-}
 
 // ResourceObject is a JSON:API resource object as defined by https://jsonapi.org/format/1.0/#document-resource-objects
 type resourceObject struct {
@@ -174,35 +166,34 @@ func (d *document) MarshalJSON() ([]byte, error) {
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface.
-func (d *document) UnmarshalJSON(data []byte) error {
-	if dataArrayRegex.Match(data) {
-		type alias document
-		aux := &struct {
-			Data []*resourceObject `json:"data"`
-			*alias
-		}{
-			alias: (*alias)(d),
-		}
-		if err := json.Unmarshal(data, &aux); err != nil {
-			return err
-		}
+func (d *document) UnmarshalJSON(data []byte) (err error) {
+	type alias document
+
+	// Since there is no simple regular expression to capture only that the primary data is an
+	// array, try unmarshaling both ways
+	auxMany := &struct {
+		Data []*resourceObject `json:"data"`
+		*alias
+	}{
+		alias: (*alias)(d),
+	}
+	if err = json.Unmarshal(data, &auxMany); err == nil {
 		d.hasMany = true
-		d.DataMany = aux.Data
-		return nil
+		d.DataMany = auxMany.Data
+		return
 	}
 
-	type alias document
-	aux := &struct {
+	auxOne := &struct {
 		Data *resourceObject `json:"data"`
 		*alias
 	}{
 		alias: (*alias)(d),
 	}
-	if err := json.Unmarshal(data, &aux); err != nil {
-		return err
+	if err = json.Unmarshal(data, &auxOne); err == nil {
+		d.DataOne = auxOne.Data
 	}
-	d.DataOne = aux.Data
-	return nil
+
+	return
 }
 
 // Linkable can be implemented to marshal resource object links as defined by https://jsonapi.org/format/1.0/#document-resource-object-links.
