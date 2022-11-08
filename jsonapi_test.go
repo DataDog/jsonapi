@@ -94,6 +94,8 @@ var (
 	articleRelatedCompleteBody                  = `{"data":{"id":"1","type":"articles","attributes":{"title":"A"},"relationships":{"author":{"data":{"id":"1","type":"author"},"meta":{"count":10},"links":{"self":"http://example.com/articles/1/relationships/author","related":"http://example.com/articles/1/author"}},"comments":{"data":[{"id":"1","type":"comments"},{"id":"2","type":"comments"}],"links":{"self":"http://example.com/articles/1/relationships/comments","related":"http://example.com/articles/1/comments"}}}}}`
 	articleRelatedCommentsNestedWithIncludeBody = `{"data":{"id":"1","type":"articles","attributes":{"title":"A"},"relationships":{"comments":{"data":[{"id":"1","type":"comments"}],"links":{"self":"http://example.com/articles/1/relationships/comments","related":"http://example.com/articles/1/comments"}}}},"included":[{"id":"1","type":"comments","attributes":{"body":"A"},"relationships":{"author":{"data":{"id":"1","type":"author"},"links":{"self":"http://example.com/comments/1/relationships/author","related":"http://example.com/comments/1/author"}}}},{"id":"1","type":"author","attributes":{"name":"A"}}]}`
 
+	articleWithIncludeOnlyBody = `{"data":{"id":"1","type":"articles","attributes":{"title":"A"}},"included":[{"id":"1","type":"author","attributes":{"name":"A"}}]}`
+
 	// error structs
 	errorsSimpleStruct         = Error{Title: "T"}
 	errorsSimpleSliceSingle    = []Error{errorsSimpleStruct}

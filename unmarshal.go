@@ -51,6 +51,10 @@ func Unmarshal(data []byte, v any, opts ...UnmarshalOption) (err error) {
 		return
 	}
 
+	if err = d.verifyFullLinkage(); err != nil {
+		return
+	}
+
 	// this means we couldn't decode anything (e.g. {}, [], ...)
 	if len(d.DataMany) == 0 && d.DataOne == nil {
 		err = &RequestBodyError{t: v}

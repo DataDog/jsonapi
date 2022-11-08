@@ -168,6 +168,16 @@ func TestUnmarshal(t *testing.T) {
 			},
 			expect:      new(Article),
 			expectError: &TypeError{Actual: "not-articles", Expected: []string{"articles"}},
+		}, {
+			description: "*Article with included author (not linked)",
+			given:       articleWithIncludeOnlyBody,
+			do: func(body []byte) (any, error) {
+				var a Article
+				err := Unmarshal(body, &a)
+				return &a, err
+			},
+			expect:      new(Article),
+			expectError: &PartialLinkageError{[]string{"{Type: author, ID: 1}"}},
 		},
 	}
 
