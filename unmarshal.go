@@ -51,13 +51,20 @@ func Unmarshal(data []byte, v any, opts ...UnmarshalOption) (err error) {
 		return
 	}
 
-	if err = d.verifyFullLinkage(); err != nil {
-		return
-	}
+	err = d.unmarshal(v, m)
 
+	return
+}
+
+func (d *document) unmarshal(v any, m *Unmarshaler) (err error) {
 	// this means we couldn't decode anything (e.g. {}, [], ...)
 	if len(d.DataMany) == 0 && d.DataOne == nil {
 		err = &RequestBodyError{t: v}
+		return
+	}
+
+	// verify full-linkage in-case this is a compound document
+	if err = d.verifyFullLinkage(); err != nil {
 		return
 	}
 
@@ -76,6 +83,7 @@ func Unmarshal(data []byte, v any, opts ...UnmarshalOption) (err error) {
 	err = d.unmarshalOptionalFields(m)
 
 	return
+
 }
 
 func (d *document) unmarshalOptionalFields(m *Unmarshaler) error {
