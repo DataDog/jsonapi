@@ -155,17 +155,23 @@ func (ro *resourceObject) unmarshal(v any) error {
 }
 
 func (ro *resourceObject) unmarshalPrimary(v any) error {
+	setPrimary := false
 	rv := derefValue(reflect.ValueOf(v))
 	rt := reflect.TypeOf(rv.Interface())
-	for i := 0; i < rv.NumField(); i++ {
-		f := rv.Field(i)
 
-		tag, err := parseJSONAPITag(rt.Field(i))
+	for i := 0; i < rv.NumField(); i++ {
+		fv := rv.Field(i)
+		ft := rt.Field(i)
+
+		tag, err := parseJSONAPITag(ft)
 		if err != nil {
 			return err
 		}
 		if tag == nil || tag.directive != primary {
 			continue
+		}
+		if setPrimary {
+			return ErrUnmarshalDuplicatePrimaryField
 		}
 
 		if ro.Type != tag.resourceType {
@@ -181,12 +187,14 @@ func (ro *resourceObject) unmarshalPrimary(v any) error {
 			if err := vu.UnmarshalID(ro.ID); err != nil {
 				return err
 			}
-			break
+			setPrimary = true
+			continue
 		}
 
-		if f.Kind() == reflect.String {
-			f.SetString(ro.ID)
-			break
+		if fv.Kind() == reflect.String {
+			fv.SetString(ro.ID)
+			setPrimary = true
+			continue
 		}
 
 		return ErrUnmarshalInvalidPrimaryField

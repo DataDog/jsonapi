@@ -304,3 +304,9 @@ type ArticleRelatedNoOmitEmpty struct {
 	Author   *Author    `jsonapi:"relationship" json:"author"`
 	Comments []*Comment `jsonapi:"relationship" json:"comments"`
 }
+
+type ArticleDoubleID struct {
+	ID    string `jsonapi:"primary,articles"`
+	Title string `jsonapi:"attribute" json:"title"`
+	Id    string `jsonapi:"primary,article"`
+}
