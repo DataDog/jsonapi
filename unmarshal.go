@@ -2,7 +2,6 @@ package jsonapi
 
 import (
 	"encoding/json"
-	"fmt"
 	"reflect"
 )
 
@@ -200,10 +199,9 @@ func (ro *resourceObject) unmarshalFields(v any) error {
 
 			return ErrUnmarshalInvalidPrimaryField
 		case relationship:
-			name, ok, _ := parseJSONTag(ft)
-			if !ok {
-				// TODO: test this code path?
-				return fmt.Errorf("field %s is not exported", ft.Name)
+			name, exported, _ := parseJSONTag(ft)
+			if !exported {
+				continue
 			}
 			relDocument, ok := ro.Relationships[name]
 			if !ok {
