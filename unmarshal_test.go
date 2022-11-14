@@ -168,6 +168,40 @@ func TestUnmarshal(t *testing.T) {
 			},
 			expect:      new(Article),
 			expectError: &TypeError{Actual: "not-articles", Expected: []string{"articles"}},
+		}, {
+			description: "*ArticleDoubleID invalid",
+			given:       articleABody,
+			do: func(body []byte) (any, error) {
+				var a ArticleDoubleID
+				err := Unmarshal(body, &a)
+				return &a, err
+			},
+			expect:      &ArticleDoubleID{ID: "1"},
+			expectError: ErrUnmarshalDuplicatePrimaryField,
+		}, {
+			description: "*Article with included author (not linked)",
+			given:       articleWithIncludeOnlyBody,
+			do: func(body []byte) (any, error) {
+				var a Article
+				err := Unmarshal(body, &a)
+				return &a, err
+			},
+			expect:      new(Article),
+			expectError: &PartialLinkageError{[]string{"{Type: author, ID: 1}"}},
+		}, {
+			description: "*ArticleRelated and Author without include data",
+			given:       articleRelatedAuthorBody,
+			do: func(body []byte) (any, error) {
+				var a ArticleRelated
+				err := Unmarshal(body, &a)
+				return &a, err
+			},
+			expect: &ArticleRelated{
+				ID:     "1",
+				Title:  "A",
+				Author: &Author{ID: "1"},
+			},
+			expectError: nil,
 		},
 	}
 

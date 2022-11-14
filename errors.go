@@ -14,6 +14,9 @@ var (
 	// ErrUnmarshalInvalidPrimaryField indicates that the id (primary) fields was invalid.
 	ErrUnmarshalInvalidPrimaryField = errors.New("primary/id field must be a string or in a struct which implements UnmarshalIdentifer")
 
+	// ErrUnmarshalDuplicatePrimaryField indicates that the id (primary) field is duplicated in a struct.
+	ErrUnmarshalDuplicatePrimaryField = errors.New("there must be only one `jsonapi:\"primary\"` field to Unmarshal")
+
 	// ErrMissingPrimaryField indicates that the id (primary) field is not identified.
 	ErrMissingPrimaryField = errors.New("primary/id field must labeled with `jsonapi:\"primary,{type}\"`")
 

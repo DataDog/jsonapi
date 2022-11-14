@@ -4,15 +4,7 @@ package jsonapi
 import (
 	"encoding/json"
 	"fmt"
-	"regexp"
 )
-
-var dataArrayRegex *regexp.Regexp
-
-func init() {
-	// matches "data":[ (ignoring any space between : and [)
-	dataArrayRegex = regexp.MustCompile(`"data":\s*\[`)
-}
 
 // ResourceObject is a JSON:API resource object as defined by https://jsonapi.org/format/1.0/#document-resource-objects
 type resourceObject struct {
@@ -174,34 +166,112 @@ func (d *document) MarshalJSON() ([]byte, error) {
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface.
-func (d *document) UnmarshalJSON(data []byte) error {
-	if dataArrayRegex.Match(data) {
-		type alias document
-		aux := &struct {
-			Data []*resourceObject `json:"data"`
-			*alias
-		}{
-			alias: (*alias)(d),
-		}
-		if err := json.Unmarshal(data, &aux); err != nil {
-			return err
-		}
+func (d *document) UnmarshalJSON(data []byte) (err error) {
+	type alias document
+
+	// Since there is no simple regular expression to capture only that the primary data is an
+	// array, try unmarshaling both ways
+	auxMany := &struct {
+		Data []*resourceObject `json:"data"`
+		*alias
+	}{
+		alias: (*alias)(d),
+	}
+	if err = json.Unmarshal(data, &auxMany); err == nil {
 		d.hasMany = true
-		d.DataMany = aux.Data
-		return nil
+		d.DataMany = auxMany.Data
+		return
 	}
 
-	type alias document
-	aux := &struct {
+	auxOne := &struct {
 		Data *resourceObject `json:"data"`
 		*alias
 	}{
 		alias: (*alias)(d),
 	}
-	if err := json.Unmarshal(data, &aux); err != nil {
-		return err
+	if err = json.Unmarshal(data, &auxOne); err == nil {
+		d.DataOne = auxOne.Data
 	}
-	d.DataOne = aux.Data
+
+	return
+}
+
+// verifyFullLinkage returns an error if the given compound document is not fully-linked as
+// described by https://jsonapi.org/format/1.1/#document-compound-documents. That is, there must be
+// a chain of relationships linking all included data to primary data transitively.
+func (d *document) verifyFullLinkage() error {
+	if len(d.Included) == 0 {
+		return nil
+	}
+
+	getResourceObjectSlice := func(d *document) []*resourceObject {
+		if d.hasMany {
+			return d.DataMany
+		}
+		if d.DataOne == nil {
+			return nil
+		}
+		return []*resourceObject{d.DataOne}
+	}
+
+	resourceIdentifier := func(ro *resourceObject) string {
+		return fmt.Sprintf("{Type: %v, ID: %v}", ro.Type, ro.ID)
+	}
+
+	// a list of related resource identifiers, and a flag to mark nodes as visited
+	type includeNode struct {
+		relatedTo []string
+		visited   bool
+	}
+
+	// compute a graph of relationships between just the included resources
+	includeGraph := make(map[string]*includeNode)
+	for _, included := range d.Included {
+		relatedTo := make([]string, 0)
+
+		for _, relationship := range included.Relationships {
+			for _, ro := range getResourceObjectSlice(relationship) {
+				relatedTo = append(relatedTo, resourceIdentifier(ro))
+			}
+		}
+
+		includeGraph[resourceIdentifier(included)] = &includeNode{relatedTo: relatedTo}
+	}
+
+	// helper to traverse the graph from a given key and mark nodes as visited
+	var visit func(identifier string)
+	visit = func(identifier string) {
+		node, ok := includeGraph[identifier]
+		if !ok || node.visited {
+			return
+		}
+		node.visited = true
+		for _, related := range node.relatedTo {
+			visit(related)
+		}
+	}
+
+	// visit all include nodes that are accessible from the primary data
+	primaryData := getResourceObjectSlice(d)
+	for _, data := range primaryData {
+		for _, relationship := range data.Relationships {
+			for _, ro := range getResourceObjectSlice(relationship) {
+				visit(resourceIdentifier(ro))
+			}
+		}
+	}
+
+	invalidResources := make([]string, 0)
+	for identifier, node := range includeGraph {
+		if !node.visited {
+			invalidResources = append(invalidResources, identifier)
+		}
+	}
+
+	if len(invalidResources) > 0 {
+		return &PartialLinkageError{invalidResources}
+	}
+
 	return nil
 }
 

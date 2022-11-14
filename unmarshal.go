@@ -51,9 +51,20 @@ func Unmarshal(data []byte, v any, opts ...UnmarshalOption) (err error) {
 		return
 	}
 
+	err = d.unmarshal(v, m)
+
+	return
+}
+
+func (d *document) unmarshal(v any, m *Unmarshaler) (err error) {
 	// this means we couldn't decode anything (e.g. {}, [], ...)
 	if len(d.DataMany) == 0 && d.DataOne == nil {
 		err = &RequestBodyError{t: v}
+		return
+	}
+
+	// verify full-linkage in-case this is a compound document
+	if err = d.verifyFullLinkage(); err != nil {
 		return
 	}
 
@@ -72,9 +83,14 @@ func Unmarshal(data []byte, v any, opts ...UnmarshalOption) (err error) {
 	err = d.unmarshalOptionalFields(m)
 
 	return
+
 }
 
 func (d *document) unmarshalOptionalFields(m *Unmarshaler) error {
+	if m == nil {
+		// this is possible during recursive document unmarshaling
+		return nil
+	}
 	if m.unmarshalMeta {
 		b, err := json.Marshal(d.Meta)
 		if err != nil {
@@ -127,7 +143,7 @@ func (ro *resourceObject) unmarshal(v any) error {
 		return &TypeError{Actual: vt.String(), Expected: []string{"struct"}}
 	}
 
-	if err := ro.unmarshalPrimary(v); err != nil {
+	if err := ro.unmarshalFields(v); err != nil {
 		return err
 	}
 
@@ -135,49 +151,86 @@ func (ro *resourceObject) unmarshal(v any) error {
 		return err
 	}
 
-	if err := ro.unmarshalMeta(v); err != nil {
-		return err
-	}
-
 	return nil
 }
 
-func (ro *resourceObject) unmarshalPrimary(v any) error {
+// unmarshalFields unmarshals a resource object into all non-attribute struct fields
+func (ro *resourceObject) unmarshalFields(v any) error {
+	setPrimary := false
 	rv := derefValue(reflect.ValueOf(v))
 	rt := reflect.TypeOf(rv.Interface())
-	for i := 0; i < rv.NumField(); i++ {
-		f := rv.Field(i)
 
-		tag, err := parseJSONAPITag(rt.Field(i))
+	for i := 0; i < rv.NumField(); i++ {
+		fv := rv.Field(i)
+		ft := rt.Field(i)
+
+		jsonapiTag, err := parseJSONAPITag(ft)
 		if err != nil {
 			return err
 		}
-		if tag == nil || tag.directive != primary {
+		if jsonapiTag == nil {
 			continue
 		}
 
-		if ro.Type != tag.resourceType {
-			return &TypeError{Actual: ro.Type, Expected: []string{tag.resourceType}}
-		}
+		switch jsonapiTag.directive {
+		case primary:
+			if setPrimary {
+				return ErrUnmarshalDuplicatePrimaryField
+			}
+			if ro.Type != jsonapiTag.resourceType {
+				return &TypeError{Actual: ro.Type, Expected: []string{jsonapiTag.resourceType}}
+			}
+			// to unmarshal the id we follow these rules
+			//     1. Use UnmarshalIdentifier if it is implemented
+			//     2. Use the value directly if it is a string
+			//     3. Fail
+			if vu, ok := v.(UnmarshalIdentifier); ok {
+				if err := vu.UnmarshalID(ro.ID); err != nil {
+					return err
+				}
+				setPrimary = true
+				continue
+			}
+			if fv.Kind() == reflect.String {
+				fv.SetString(ro.ID)
+				setPrimary = true
+				continue
+			}
 
-		// to unmarshal the id we follow these rules
-		//     1. Use UnmarshalIdentifier if it is implemented
-		//     2. Use the value directly if it is a string
-		//     3. Fail
+			return ErrUnmarshalInvalidPrimaryField
+		case relationship:
+			name, exported, _ := parseJSONTag(ft)
+			if !exported {
+				continue
+			}
+			relDocument, ok := ro.Relationships[name]
+			if !ok {
+				// relDocument has no relationship data, so there's nothing to do
+				continue
+			}
 
-		if vu, ok := v.(UnmarshalIdentifier); ok {
-			if err := vu.UnmarshalID(ro.ID); err != nil {
+			rel := reflect.New(derefType(ft.Type)).Interface()
+			if err := relDocument.unmarshal(rel, nil); err != nil {
 				return err
 			}
-			break
-		}
+			setFieldValue(fv, rel)
+		case meta:
+			if ro.Meta == nil {
+				continue
+			}
+			b, err := json.Marshal(ro.Meta)
+			if err != nil {
+				return err
+			}
 
-		if f.Kind() == reflect.String {
-			f.SetString(ro.ID)
-			break
+			meta := reflect.New(derefType(ft.Type)).Interface()
+			if err = json.Unmarshal(b, meta); err != nil {
+				return err
+			}
+			setFieldValue(fv, meta)
+		default:
+			continue
 		}
-
-		return ErrUnmarshalInvalidPrimaryField
 	}
 
 	return nil
@@ -191,47 +244,5 @@ func (ro *resourceObject) unmarshalAttributes(v any) error {
 	if err := json.Unmarshal(b, v); err != nil {
 		return err
 	}
-	return nil
-}
-
-func (ro *resourceObject) unmarshalMeta(v any) error {
-	if ro.Meta == nil {
-		return nil
-	}
-
-	rv := derefValue(reflect.ValueOf(v))
-	rt := reflect.TypeOf(rv.Interface())
-	for i := 0; i < rv.NumField(); i++ {
-		f := rv.Field(i)
-
-		tag, err := parseJSONAPITag(rt.Field(i))
-		if err != nil {
-			return err
-		}
-		if tag == nil || tag.directive != meta {
-			continue
-		}
-
-		b, err := json.Marshal(ro.Meta)
-		if err != nil {
-			return err
-		}
-
-		v := reflect.New(derefType(f.Type())).Interface()
-		err = json.Unmarshal(b, v)
-		if err != nil {
-			return err
-		}
-
-		// reflect.New creates a pointer so if the fields type is
-		// not a pointer, dereference the unmarshaled value
-		vv := reflect.ValueOf(v)
-		if f.Kind() != reflect.Pointer {
-			vv = derefValue(vv)
-		}
-
-		f.Set(vv)
-	}
-
 	return nil
 }
