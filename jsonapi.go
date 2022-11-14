@@ -8,7 +8,7 @@ import (
 
 // ResourceObject is a JSON:API resource object as defined by https://jsonapi.org/format/1.0/#document-resource-objects
 type resourceObject struct {
-	ID            string               `json:"id"`
+	ID            string               `json:"id,omitempty"`
 	Type          string               `json:"type"`
 	Attributes    map[string]any       `json:"attributes,omitempty"`
 	Relationships map[string]*document `json:"relationships,omitempty"`

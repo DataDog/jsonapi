@@ -23,6 +23,7 @@ type Marshaler struct {
 	jsonAPImeta    any
 	included       []any
 	link           *Link
+	clientMode     bool
 
 	// fields support sparse fieldsets https://jsonapi.org/format/#fetching-sparse-fieldsets
 	fields map[string][]string
@@ -73,6 +74,13 @@ func MarshalFields(query url.Values) MarshalOption {
 func MarshalLinks(l *Link) MarshalOption {
 	return func(m *Marshaler) {
 		m.link = l
+	}
+}
+
+// MarshalClientMode enables client mode which skips validation only relevant for servers writing JSON:API responses.
+func MarshalClientMode() MarshalOption {
+	return func(m *Marshaler) {
+		m.clientMode = true
 	}
 }
 
@@ -399,7 +407,7 @@ func makeResourceObject(v any, vt reflect.Type, m *Marshaler, isRelationship boo
 	}
 
 	// id (e.g. the primary field) must not be empty
-	if ro.ID == "" {
+	if ro.ID == "" && !m.clientMode {
 		return nil, ErrEmptyPrimaryField
 	}
 
