@@ -306,7 +306,7 @@ type ArticleRelatedNoOmitEmpty struct {
 }
 
 type ArticleDoubleID struct {
-	ID    string `jsonapi:"primary,articles"`
-	Title string `jsonapi:"attribute" json:"title"`
-	Id    string `jsonapi:"primary,article"`
+	ID      string `jsonapi:"primary,articles"`
+	Title   string `jsonapi:"attribute" json:"title"`
+	OtherID string `jsonapi:"primary,article"`
 }
