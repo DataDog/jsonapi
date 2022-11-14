@@ -188,6 +188,20 @@ func TestUnmarshal(t *testing.T) {
 			},
 			expect:      new(Article),
 			expectError: &PartialLinkageError{[]string{"{Type: author, ID: 1}"}},
+		}, {
+			description: "*ArticleRelated and Author without include data",
+			given:       articleRelatedAuthorBody,
+			do: func(body []byte) (any, error) {
+				var a ArticleRelated
+				err := Unmarshal(body, &a)
+				return &a, err
+			},
+			expect: &ArticleRelated{
+				ID:     "1",
+				Title:  "A",
+				Author: &Author{ID: "1"},
+			},
+			expectError: nil,
 		},
 	}
 

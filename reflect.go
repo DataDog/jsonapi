@@ -36,3 +36,14 @@ func recoverError(rvr any) error {
 	}
 	return err
 }
+
+func setFieldValue(fv reflect.Value, v any) {
+	vv := reflect.ValueOf(v)
+
+	// if the field is not a pointer, dereference the value fully in case
+	// it is a pointer (likely returned by reflect.New)
+	if fv.Kind() != reflect.Pointer {
+		vv = derefValue(vv)
+	}
+	fv.Set(vv)
+}

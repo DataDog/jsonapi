@@ -49,7 +49,7 @@ func parseJSONTag(f reflect.StructField) (string, bool, bool) {
 		omit = ts[1] == "omitempty"
 	}
 
-	return ts[0], true, omit
+	return ts[0], f.IsExported(), omit
 }
 
 func parseJSONAPITag(f reflect.StructField) (*tag, error) {
