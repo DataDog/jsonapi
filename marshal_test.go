@@ -573,3 +573,31 @@ func TestMarshalRelationships(t *testing.T) {
 		})
 	}
 }
+
+func TestMarshalClientMode(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		description string
+		given       any
+		expect      string
+	}{
+		{
+			description: "empty primary field",
+			given:       &Article{ID: "", Title: "A"},
+			expect:      articleANoIDBody,
+		},
+	}
+
+	for i, tc := range tests {
+		tc := tc
+		t.Run(fmt.Sprintf("%02d", i), func(t *testing.T) {
+			t.Parallel()
+			t.Log(tc.description)
+
+			actual, err := Marshal(tc.given, MarshalClientMode())
+			is.MustNoError(t, err)
+			is.EqualJSON(t, tc.expect, string(actual))
+		})
+	}
+}
