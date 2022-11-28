@@ -189,7 +189,7 @@ func TestUnmarshal(t *testing.T) {
 			expect:      new(Article),
 			expectError: &PartialLinkageError{[]string{"{Type: author, ID: 1}"}},
 		}, {
-			description: "*ArticleRelated and Author without include data",
+			description: "*ArticleRelated.Author",
 			given:       articleRelatedAuthorBody,
 			do: func(body []byte) (any, error) {
 				var a ArticleRelated
@@ -200,6 +200,34 @@ func TestUnmarshal(t *testing.T) {
 				ID:     "1",
 				Title:  "A",
 				Author: &Author{ID: "1"},
+			},
+			expectError: nil,
+		}, {
+			description: "[]*ArticleRelated.Author twice",
+			given:       articleRelatedAuthorTwiceBody,
+			do: func(body []byte) (any, error) {
+				var a []*ArticleRelated
+				err := Unmarshal(body, &a)
+				return &a, err
+			},
+			expect: &[]*ArticleRelated{
+				{ID: "1", Title: "A", Author: &Author{ID: "1"}},
+				{ID: "2", Title: "B", Author: &Author{ID: "1"}},
+			},
+			expectError: nil,
+		}, {
+			description: "*ArticleRelated Complete",
+			given:       articleRelatedCompleteBody,
+			do: func(body []byte) (any, error) {
+				var a ArticleRelated
+				err := Unmarshal(body, &a)
+				return &a, err
+			},
+			expect: &ArticleRelated{
+				ID:       "1",
+				Title:    "A",
+				Author:   &Author{ID: "1"},
+				Comments: []*Comment{{ID: "1"}, {ID: "2"}},
 			},
 			expectError: nil,
 		},
