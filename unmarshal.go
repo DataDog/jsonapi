@@ -64,7 +64,7 @@ func (d *document) unmarshal(v any, m *Unmarshaler) (err error) {
 	}
 
 	// verify full-linkage in-case this is a compound document
-	if err = d.verifyFullLinkage(); err != nil {
+	if err = d.verifyFullLinkage(true); err != nil {
 		return
 	}
 

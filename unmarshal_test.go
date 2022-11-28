@@ -230,6 +230,39 @@ func TestUnmarshal(t *testing.T) {
 				Comments: []*Comment{{ID: "1"}, {ID: "2"}},
 			},
 			expectError: nil,
+		}, {
+			description: "[]*ArticleRelated.Author twice with include",
+			given:       articleRelatedAuthorTwiceWithIncludeBody,
+			do: func(body []byte) (any, error) {
+				var a []*ArticleRelated
+				err := Unmarshal(body, &a)
+				return &a, err
+			},
+			expect: &[]*ArticleRelated{
+				{ID: "1", Title: "A", Author: &authorA},
+				{ID: "2", Title: "B", Author: &authorA},
+			},
+			expectError: nil,
+		}, {
+			description: "[]*ArticleRelated complete with include",
+			given:       articleRelatedCompleteWithIncludeBody,
+			do: func(body []byte) (any, error) {
+				var a ArticleRelated
+				err := Unmarshal(body, &a)
+				return &a, err
+			},
+			expect:      &ArticleRelated{ID: "1", Title: "A", Author: &authorA, Comments: commentsAB},
+			expectError: nil,
+		}, {
+			description: "*ArticleRelated.Comments.Author with include",
+			given:       articleRelatedCommentsNestedWithIncludeBody,
+			do: func(body []byte) (any, error) {
+				var a ArticleRelated
+				err := Unmarshal(body, &a)
+				return &a, err
+			},
+			expect:      &articleRelatedCommentsNested,
+			expectError: nil,
 		},
 	}
 
