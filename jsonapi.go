@@ -199,7 +199,7 @@ func (d *document) UnmarshalJSON(data []byte) (err error) {
 // verifyFullLinkage returns an error if the given compound document is not fully-linked as
 // described by https://jsonapi.org/format/1.1/#document-compound-documents. That is, there must be
 // a chain of relationships linking all included data to primary data transitively.
-func (d *document) verifyFullLinkage() error {
+func (d *document) verifyFullLinkage(aliasRelationships bool) error {
 	if len(d.Included) == 0 {
 		return nil
 	}
@@ -220,31 +220,39 @@ func (d *document) verifyFullLinkage() error {
 
 	// a list of related resource identifiers, and a flag to mark nodes as visited
 	type includeNode struct {
-		relatedTo []string
+		included  *resourceObject
+		relatedTo []*resourceObject
 		visited   bool
 	}
 
 	// compute a graph of relationships between just the included resources
 	includeGraph := make(map[string]*includeNode)
 	for _, included := range d.Included {
-		relatedTo := make([]string, 0)
+		relatedTo := make([]*resourceObject, 0)
 
 		for _, relationship := range included.Relationships {
-			for _, ro := range getResourceObjectSlice(relationship) {
-				relatedTo = append(relatedTo, resourceIdentifier(ro))
-			}
+			relatedTo = append(relatedTo, getResourceObjectSlice(relationship)...)
 		}
 
-		includeGraph[resourceIdentifier(included)] = &includeNode{relatedTo: relatedTo}
+		includeGraph[resourceIdentifier(included)] = &includeNode{included, relatedTo, false}
 	}
 
 	// helper to traverse the graph from a given key and mark nodes as visited
-	var visit func(identifier string)
-	visit = func(identifier string) {
-		node, ok := includeGraph[identifier]
-		if !ok || node.visited {
+	var visit func(ro *resourceObject)
+	visit = func(ro *resourceObject) {
+		node, ok := includeGraph[resourceIdentifier(ro)]
+		if !ok {
 			return
 		}
+		if aliasRelationships {
+			// fill the relationship document itself with included data
+			*ro = *node.included
+		}
+		if node.visited {
+			// cycle detected, don't visit adjacent nodes
+			return
+		}
+
 		node.visited = true
 		for _, related := range node.relatedTo {
 			visit(related)
@@ -256,7 +264,7 @@ func (d *document) verifyFullLinkage() error {
 	for _, data := range primaryData {
 		for _, relationship := range data.Relationships {
 			for _, ro := range getResourceObjectSlice(relationship) {
-				visit(resourceIdentifier(ro))
+				visit(ro)
 			}
 		}
 	}

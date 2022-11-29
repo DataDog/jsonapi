@@ -185,7 +185,7 @@ func makeDocument(v any, m *Marshaler, isRelationship bool) (*document, error) {
 	}
 
 	// if we got any included data, verify full-linkage of this compound document.
-	if err := d.verifyFullLinkage(); err != nil {
+	if err := d.verifyFullLinkage(false); err != nil {
 		return nil, err
 	}
 
