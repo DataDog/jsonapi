@@ -77,3 +77,31 @@ func (e *PartialLinkageError) Error() string {
 		strings.Join(e.invalidResources, ","),
 	)
 }
+
+// ErrorLink represents a JSON:API error links object as defined by https://jsonapi.org/format/1.0/#error-objects.
+type ErrorLink struct {
+	About string `json:"about,omitempty"`
+}
+
+// ErrorSource represents a JSON:API Error.Source as defined by https://jsonapi.org/format/1.0/#error-objects.
+type ErrorSource struct {
+	Pointer   string `json:"pointer,omitempty"`
+	Parameter string `json:"parameter,omitempty"`
+}
+
+// Error represents a JSON:API error object as defined by https://jsonapi.org/format/1.0/#error-objects.
+type Error struct {
+	ID     string       `json:"id,omitempty"`
+	Links  *ErrorLink   `json:"links,omitempty"`
+	Status string       `json:"status,omitempty"`
+	Code   string       `json:"code,omitempty"`
+	Title  string       `json:"title,omitempty"`
+	Detail string       `json:"detail,omitempty"`
+	Source *ErrorSource `json:"source,omitempty"`
+	Meta   any          `json:"meta,omitempty"`
+}
+
+// Error implements the error interface.
+func (e *Error) Error() string {
+	return fmt.Sprintf("%s: %s", e.Title, e.Detail)
+}
