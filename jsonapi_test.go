@@ -100,10 +100,10 @@ var (
 	articleWithIncludeOnlyBody                  = `{"data":{"id":"1","type":"articles","attributes":{"title":"A"}},"included":[{"id":"1","type":"author","attributes":{"name":"A"}}]}`
 
 	// error structs
-	errorsSimpleStruct         = Error{Title: "T"}
-	errorsSimpleSliceSingle    = []Error{errorsSimpleStruct}
+	errorsSimpleStruct         = Error{Title: "T"}           //nolint: errname
+	errorsSimpleSliceSingle    = []Error{errorsSimpleStruct} //nolint: errname
 	errorsSimpleSliceSinglePtr = []*Error{&errorsSimpleStruct}
-	errorsComplexStruct        = Error{
+	errorsComplexStruct        = Error{ //nolint: errname
 		ID:     "1",
 		Links:  &ErrorLink{About: "A"},
 		Status: "S",
