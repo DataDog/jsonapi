@@ -115,7 +115,7 @@ var (
 	}
 	errorsComplexSliceMany    = []Error{errorsSimpleStruct, errorsComplexStruct}
 	errorsComplexSliceManyPtr = []*Error{&errorsSimpleStruct, &errorsComplexStruct}
-	errorsWithLinkObject      = Error{
+	errorsWithLinkObject      = Error{ //nolint: errname
 		Links: &ErrorLink{
 			About: &LinkObject{
 				Href: "A",
@@ -126,7 +126,7 @@ var (
 			},
 		},
 	}
-	errorsWithInvalidLink = Error{Links: &ErrorLink{About: 1}}
+	errorsWithInvalidLink = Error{Links: &ErrorLink{About: 1}} //nolint: errname
 
 	// error bodies
 	errorsSimpleStructBody     = `{"errors":[{"title":"T"}]}`
