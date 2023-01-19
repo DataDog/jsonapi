@@ -221,6 +221,16 @@ func TestMarshal(t *testing.T) {
 			expect:      errorsComplexSliceManyBody,
 			expectError: nil,
 		}, {
+			description: "Error with link object",
+			given:       errorsWithLinkObject,
+			expect:      errorsWithLinkObjectBody,
+			expectError: nil,
+		}, {
+			description: "Error with invalid link",
+			given:       errorsWithInvalidLink,
+			expect:      "",
+			expectError: &TypeError{Actual: "int", Expected: []string{"*LinkObject", "string"}},
+		}, {
 			description: "Error empty",
 			given:       Error{},
 			expect:      `{"errors":[{}]}`,
