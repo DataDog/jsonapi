@@ -2,6 +2,7 @@ package jsonapi
 
 import (
 	"fmt"
+	"log"
 	"reflect"
 	"runtime/debug"
 )
@@ -46,4 +47,33 @@ func setFieldValue(fv reflect.Value, v any) {
 		vv = derefValue(vv)
 	}
 	fv.Set(vv)
+}
+
+func Reflect(v any, opts ...MarshalOption) (rv reflect.Value, err error) {
+	defer func() {
+		// because we make use of reflect we must recover any panics
+		if rvr := recover(); rvr != nil {
+			err = recoverError(rvr)
+			return
+		}
+	}()
+
+	m := new(Marshaler)
+	for _, opt := range opts {
+		opt(m)
+	}
+
+	// marshal first constructs a jsonapi.Document
+	// the given "v" is the resource document (either one or many) of any type
+	var d *document
+	d, err = makeDocument(v, m, false)
+	if err != nil {
+		return
+	}
+
+	log.Printf("%+v", d)
+	log.Printf("%+v", d.DataOne)
+
+	rv = reflect.ValueOf(d)
+	return
 }
