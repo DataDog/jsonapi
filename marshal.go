@@ -264,6 +264,17 @@ func makeDocumentErrors(v any, m *Marshaler) (*document, error) {
 		return nil, nil
 	}
 
+	// check for valid error links if present
+	for _, eo := range errorObjects {
+		if eo.Links == nil {
+			continue
+		}
+
+		if _, err := checkLinkValue(eo.Links.About); err != nil {
+			return nil, err
+		}
+	}
+
 	d := newDocument()
 	d.Errors = errorObjects
 

@@ -115,11 +115,24 @@ var (
 	}
 	errorsComplexSliceMany    = []Error{errorsSimpleStruct, errorsComplexStruct}
 	errorsComplexSliceManyPtr = []*Error{&errorsSimpleStruct, &errorsComplexStruct}
+	errorsWithLinkObject      = Error{ //nolint: errname
+		Links: &ErrorLink{
+			About: &LinkObject{
+				Href: "A",
+				Meta: map[string]any{
+					"key_s": "B",
+					"key_i": 420,
+				},
+			},
+		},
+	}
+	errorsWithInvalidLink = Error{Links: &ErrorLink{About: 1}} //nolint: errname
 
 	// error bodies
 	errorsSimpleStructBody     = `{"errors":[{"title":"T"}]}`
 	errorsComplexStructBody    = `{"errors":[{"id":"1","links":{"about":"A"},"status":"S","code":"C","title":"T","detail":"D","source":{"pointer":"PO","parameter":"PA"},"meta":{"K":"V"}}]}`
 	errorsComplexSliceManyBody = `{"errors":[{"title":"T"},{"id":"1","links":{"about":"A"},"status":"S","code":"C","title":"T","detail":"D","source":{"pointer":"PO","parameter":"PA"},"meta":{"K":"V"}}]}`
+	errorsWithLinkObjectBody   = `{"errors":[{"links":{"about":{"href":"A","meta":{"key_i":420,"key_s":"B"}}}}]}`
 )
 
 type Article struct {
