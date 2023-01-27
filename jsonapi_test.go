@@ -2,6 +2,7 @@ package jsonapi
 
 import (
 	"fmt"
+	"net/http"
 	"strconv"
 	"time"
 )
@@ -106,7 +107,7 @@ var (
 	errorsComplexStruct        = Error{ //nolint: errname
 		ID:     "1",
 		Links:  &ErrorLink{About: "A"},
-		Status: "S",
+		Status: Status(http.StatusInternalServerError),
 		Code:   "C",
 		Title:  "T",
 		Detail: "D",
@@ -130,8 +131,8 @@ var (
 
 	// error bodies
 	errorsSimpleStructBody     = `{"errors":[{"title":"T"}]}`
-	errorsComplexStructBody    = `{"errors":[{"id":"1","links":{"about":"A"},"status":"S","code":"C","title":"T","detail":"D","source":{"pointer":"PO","parameter":"PA"},"meta":{"K":"V"}}]}`
-	errorsComplexSliceManyBody = `{"errors":[{"title":"T"},{"id":"1","links":{"about":"A"},"status":"S","code":"C","title":"T","detail":"D","source":{"pointer":"PO","parameter":"PA"},"meta":{"K":"V"}}]}`
+	errorsComplexStructBody    = `{"errors":[{"id":"1","links":{"about":"A"},"status":"500","code":"C","title":"T","detail":"D","source":{"pointer":"PO","parameter":"PA"},"meta":{"K":"V"}}]}`
+	errorsComplexSliceManyBody = `{"errors":[{"title":"T"},{"id":"1","links":{"about":"A"},"status":"500","code":"C","title":"T","detail":"D","source":{"pointer":"PO","parameter":"PA"},"meta":{"K":"V"}}]}`
 	errorsWithLinkObjectBody   = `{"errors":[{"links":{"about":{"href":"A","meta":{"key_i":420,"key_s":"B"}}}}]}`
 )
 
