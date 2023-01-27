@@ -1,6 +1,7 @@
 package jsonapi
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"sort"
@@ -89,16 +90,38 @@ type ErrorSource struct {
 	Parameter string `json:"parameter,omitempty"`
 }
 
+// Status provides a helper for setting an Error.Status value.
+func Status(s int) *int {
+	return &s
+}
+
 // Error represents a JSON:API error object as defined by https://jsonapi.org/format/1.0/#error-objects.
 type Error struct {
 	ID     string       `json:"id,omitempty"`
 	Links  *ErrorLink   `json:"links,omitempty"`
-	Status string       `json:"status,omitempty"`
+	Status *int         `json:"status,omitempty"`
 	Code   string       `json:"code,omitempty"`
 	Title  string       `json:"title,omitempty"`
 	Detail string       `json:"detail,omitempty"`
 	Source *ErrorSource `json:"source,omitempty"`
 	Meta   any          `json:"meta,omitempty"`
+}
+
+// MarshalJSON implements the json.Marshaler interface.
+func (e *Error) MarshalJSON() ([]byte, error) {
+	var status string
+	if e.Status != nil {
+		status = fmt.Sprintf("%d", *e.Status)
+	}
+
+	type alias Error
+	return json.Marshal(&struct {
+		Status string `json:"status,omitempty"`
+		*alias
+	}{
+		Status: status,
+		alias:  (*alias)(e),
+	})
 }
 
 // Error implements the error interface.
