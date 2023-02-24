@@ -130,6 +130,26 @@ func TestUnmarshal(t *testing.T) {
 			expect:      &articleAWithMeta,
 			expectError: nil,
 		}, {
+			description: "ArticleEmbedded",
+			given:       articleEmbeddedBody,
+			do: func(body []byte) (any, error) {
+				var a ArticleEmbedded
+				err := Unmarshal(body, &a)
+				return &a, err
+			},
+			expect:      &articleEmbedded,
+			expectError: nil,
+		}, {
+			description: "ArticleEmbeddedPointer",
+			given:       articleEmbeddedBody,
+			do: func(body []byte) (any, error) {
+				var a ArticleEmbeddedPointer
+				err := Unmarshal(body, &a)
+				return &a, err
+			},
+			expect:      &articleEmbeddedPointer,
+			expectError: nil,
+		}, {
 			description: "nil",
 			given:       "",
 			do: func(body []byte) (any, error) {
