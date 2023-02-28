@@ -53,6 +53,8 @@ var (
 	articleAIntIDID                              = ArticleIntIDID{ID: IntID(1), Title: "A"}
 	articleBIntIDID                              = ArticleIntIDID{ID: IntID(2), Title: "B"}
 	articlesIntIDIDABPtr                         = []*ArticleIntIDID{&articleAIntIDID, &articleBIntIDID}
+	articleEmbedded                              = ArticleEmbedded{ID: "1", Title: "A", Metadata: Metadata{LastModified: time.Date(1989, 06, 15, 0, 0, 0, 0, time.UTC)}}
+	articleEmbeddedPointer                       = ArticleEmbeddedPointer{ID: "1", Title: "A", Metadata: &Metadata{LastModified: time.Date(1989, 06, 15, 0, 0, 0, 0, time.UTC)}}
 
 	// articles with optional meta
 	articleAWithMeta              = ArticleWithMeta{ID: "1", Title: "A", Meta: &ArticleMetrics{Views: 10, Reads: 4}}
@@ -86,6 +88,7 @@ var (
 	articleLinkedOnlySelfBody         = `{"data":{"id":"1","type":"articles","links":{"self":"https://example.com/articles/1"}}}`
 	articleWithResourceObjectMetaBody = `{"data":{"type":"articles","id":"1","attributes":{"title":"A"},"meta":{"count":10}}}`
 	articleAWithMetaBody              = `{"data":{"id":"1","type":"articles","attributes":{"title":"A"},"meta":{"views":10,"reads":4}}}`
+	articleEmbeddedBody               = `{"data":{"type":"articles","id":"1","attributes":{"title":"A","lastModified":"1989-06-15T00:00:00Z"}}}`
 
 	// articles with relationships bodies
 	articleRelatedNoOmitEmptyBody               = `{"data":{"id":"1","type":"articles","attributes":{"title":"A"},"relationships":{"author":{"data":null},"comments":{"data":[]}}}}`
@@ -326,4 +329,22 @@ type ArticleDoubleID struct {
 	ID      string `jsonapi:"primary,articles"`
 	Title   string `jsonapi:"attribute" json:"title"`
 	OtherID string `jsonapi:"primary,article"`
+}
+
+type Metadata struct {
+	LastModified time.Time `jsonapi:"attribute" json:"lastModified"`
+}
+
+type ArticleEmbedded struct {
+	Metadata
+
+	ID    string `jsonapi:"primary,articles"`
+	Title string `jsonapi:"attribute" json:"title"`
+}
+
+type ArticleEmbeddedPointer struct {
+	*Metadata
+
+	ID    string `jsonapi:"primary,articles"`
+	Title string `jsonapi:"attribute" json:"title"`
 }

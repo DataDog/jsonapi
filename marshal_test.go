@@ -186,6 +186,16 @@ func TestMarshal(t *testing.T) {
 			expect:      articleABody,
 			expectError: nil,
 		}, {
+			description: "ArticleEmbedded",
+			given:       &articleEmbedded,
+			expect:      articleEmbeddedBody,
+			expectError: nil,
+		}, {
+			description: "ArticleEmbeddedPointer",
+			given:       &articleEmbeddedPointer,
+			expect:      articleEmbeddedBody,
+			expectError: nil,
+		}, {
 			description: "Error simple",
 			given:       errorsSimpleStruct,
 			expect:      errorsSimpleStructBody,

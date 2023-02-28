@@ -298,16 +298,16 @@ func makeResourceObject(v any, vt reflect.Type, m *Marshaler, isRelationship boo
 		Relationships: make(map[string]*document, 0),
 	}
 
-	rv := derefValue(reflect.ValueOf(v))
-	rt := reflect.TypeOf(rv.Interface())
+	// get fields from embedded structs
+	fields := getFlattenedFields(v)
 
 	var foundPrimary bool
-	for i := 0; i < rv.NumField(); i++ {
+	for _, field := range fields {
 		// for each field in the struct we'll parse the jsonapi struct tag
 		// this will determine where it goes in the resource object (e.g. id,type,attributes,...)
 
-		f := rv.Field(i)
-		ft := rt.Field(i)
+		f := field.v
+		ft := field.f
 
 		tag, err := parseJSONAPITag(ft)
 		if err != nil {
@@ -432,6 +432,35 @@ func makeResourceObject(v any, vt reflect.Type, m *Marshaler, isRelationship boo
 	}
 
 	return ro, nil
+}
+
+func getFlattenedFields(iface interface{}) []struct {
+	v reflect.Value
+	f reflect.StructField
+} {
+	rv := derefValue(reflect.ValueOf(iface))
+	rt := reflect.TypeOf(rv.Interface())
+
+	fields := make([]struct {
+		v reflect.Value
+		f reflect.StructField
+	}, 0)
+
+	for i := 0; i < rv.NumField(); i++ {
+		v := rv.Field(i)
+		f := rt.Field(i)
+
+		if f.Anonymous && (v.Kind() == reflect.Struct || v.Kind() == reflect.Pointer) {
+			fields = append(fields, getFlattenedFields(v.Interface())...)
+		} else {
+			fields = append(fields, struct {
+				v reflect.Value
+				f reflect.StructField
+			}{v, f})
+		}
+	}
+
+	return fields
 }
 
 func addOptionalDocumentFields(d *document, m *Marshaler) error {
