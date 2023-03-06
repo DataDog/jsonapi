@@ -204,7 +204,7 @@ func (ro *resourceObject) unmarshalFields(v any) error {
 				continue
 			}
 			relDocument, ok := ro.Relationships[name]
-			if !ok {
+			if !ok || (len(relDocument.DataMany) == 0 && relDocument.DataOne == nil) {
 				// relDocument has no relationship data, so there's nothing to do
 				continue
 			}
