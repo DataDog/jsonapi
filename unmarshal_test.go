@@ -209,6 +209,17 @@ func TestUnmarshal(t *testing.T) {
 			expect:      new(Article),
 			expectError: &PartialLinkageError{[]string{"{Type: author, ID: 1}"}},
 		}, {
+			// this test verifies that empty relationship bodies (null and []) unmarshal
+			description: "*ArticleRelated empty relationships",
+			given:       articleRelatedNoOmitEmptyBody,
+			do: func(body []byte) (any, error) {
+				var a ArticleRelated
+				err := Unmarshal(body, &a)
+				return &a, err
+			},
+			expect:      &ArticleRelated{ID: "1", Title: "A"},
+			expectError: nil,
+		}, {
 			description: "*ArticleRelated.Author",
 			given:       articleRelatedAuthorBody,
 			do: func(body []byte) (any, error) {

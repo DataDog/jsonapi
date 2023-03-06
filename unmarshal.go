@@ -58,7 +58,7 @@ func Unmarshal(data []byte, v any, opts ...UnmarshalOption) (err error) {
 
 func (d *document) unmarshal(v any, m *Unmarshaler) (err error) {
 	// this means we couldn't decode anything (e.g. {}, [], ...)
-	if len(d.DataMany) == 0 && d.DataOne == nil {
+	if d.isEmpty() {
 		err = &RequestBodyError{t: v}
 		return
 	}
@@ -204,7 +204,7 @@ func (ro *resourceObject) unmarshalFields(v any) error {
 				continue
 			}
 			relDocument, ok := ro.Relationships[name]
-			if !ok {
+			if !ok || relDocument.isEmpty() {
 				// relDocument has no relationship data, so there's nothing to do
 				continue
 			}

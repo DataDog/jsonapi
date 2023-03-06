@@ -173,6 +173,11 @@ func (d *document) UnmarshalJSON(data []byte) (err error) {
 	return
 }
 
+// isEmpty returns true if there is no primary data in the given document (i.e. null or []).
+func (d *document) isEmpty() bool {
+	return len(d.DataMany) == 0 && d.DataOne == nil
+}
+
 // verifyFullLinkage returns an error if the given compound document is not fully-linked as
 // described by https://jsonapi.org/format/1.1/#document-compound-documents. That is, there must be
 // a chain of relationships linking all included data to primary data transitively.
