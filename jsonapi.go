@@ -4,6 +4,7 @@ package jsonapi
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 )
 
 // ResourceObject is a JSON:API resource object as defined by https://jsonapi.org/format/1.0/#document-resource-objects
@@ -20,6 +21,20 @@ type resourceObject struct {
 type jsonAPI struct {
 	Version string `json:"version"`
 	Meta    any    `json:"meta,omitempty"`
+}
+
+// checkMeta returns a type error if the given meta value is not map-like
+func checkMeta(m any) *TypeError {
+	if m == nil {
+		return nil
+	}
+
+	mt := derefType(reflect.TypeOf(m))
+	if mt.Kind() == reflect.Struct || mt.Kind() == reflect.Map {
+		return nil
+	}
+
+	return &TypeError{Actual: mt.String(), Expected: []string{"struct", "map"}}
 }
 
 // LinkObject is a links object as defined by https://jsonapi.org/format/1.0/#document-links
@@ -45,6 +60,9 @@ func checkLinkValue(linkValue any) (bool, *TypeError) {
 
 	switch lv := linkValue.(type) {
 	case *LinkObject:
+		if err := checkMeta(lv.Meta); err != nil {
+			return false, err
+		}
 		isEmpty = (lv.Href == "")
 	case string:
 		isEmpty = (lv == "")

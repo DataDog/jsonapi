@@ -320,6 +320,7 @@ func TestUnmarshalMeta(t *testing.T) {
 
 	articleAMetaBody := `{"data":{"id":"1","type":"articles","attributes":{"title":"A"}},"meta":{"foo":"bar"}}`
 	articlesABMetaBody := `{"data":[{"type":"articles","id":"1","attributes":{"title":"A"}},{"type":"articles","id":"2","attributes":{"title":"B"}}],"meta":{"foo":"bar"}}`
+	articleAInvalidMetaBody := `{"data":{"id":"1","type":"articles"},"meta":"foo"}`
 
 	type meta struct {
 		Foo string `json:"foo"`
@@ -379,6 +380,18 @@ func TestUnmarshalMeta(t *testing.T) {
 			},
 			expect:      new(meta),
 			expectError: &json.InvalidUnmarshalError{Type: reflect.TypeOf(meta{})},
+		}, {
+			description: "invalid meta type",
+			do: func() (any, error) {
+				var (
+					a Article
+					m string
+				)
+				err := Unmarshal([]byte(articleAInvalidMetaBody), &a, UnmarshalMeta(m))
+				return &m, err
+			},
+			expect:      nil,
+			expectError: &json.InvalidUnmarshalError{Type: reflect.TypeOf("")},
 		},
 	}
 
@@ -391,7 +404,10 @@ func TestUnmarshalMeta(t *testing.T) {
 			actual, err := tc.do()
 			if tc.expectError != nil {
 				is.EqualError(t, tc.expectError, err)
-				is.Equal(t, tc.expect, actual)
+
+				if tc.expect != nil {
+					is.Equal(t, tc.expect, actual)
+				}
 				return
 			}
 			is.MustNoError(t, err)

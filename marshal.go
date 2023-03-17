@@ -264,13 +264,14 @@ func makeDocumentErrors(v any, m *Marshaler) (*document, error) {
 		return nil, nil
 	}
 
-	// check for valid error links if present
+	// check for valid error links and meta fields if present
 	for _, eo := range errorObjects {
-		if eo.Links == nil {
-			continue
+		if eo.Links != nil {
+			if _, err := checkLinkValue(eo.Links.About); err != nil {
+				return nil, err
+			}
 		}
-
-		if _, err := checkLinkValue(eo.Links.About); err != nil {
+		if err := checkMeta(eo.Meta); err != nil {
 			return nil, err
 		}
 	}
@@ -483,17 +484,4 @@ func addOptionalDocumentFields(d *document, m *Marshaler) error {
 	d.Links = m.link
 
 	return nil
-}
-
-func checkMeta(m any) error {
-	if m == nil {
-		return nil
-	}
-
-	mt := derefType(reflect.TypeOf(m))
-	if mt.Kind() == reflect.Struct || mt.Kind() == reflect.Map {
-		return nil
-	}
-
-	return &TypeError{Actual: mt.String(), Expected: []string{"struct", "map"}}
 }
