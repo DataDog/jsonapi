@@ -18,12 +18,13 @@ func init() {
 // Marshaler is configured internally via MarshalOption's passed to Marshal.
 // It's used to configure the Marshaling by including optional fields like Meta or JSONAPI.
 type Marshaler struct {
-	meta           any
-	includeJSONAPI bool
-	jsonAPImeta    any
-	included       []any
-	link           *Link
-	clientMode     bool
+	meta                     any
+	includeJSONAPI           bool
+	jsonAPImeta              any
+	included                 []any
+	link                     *Link
+	clientMode               bool
+	memberNameValidationMode memberNameValidationMode
 
 	// fields support sparse fieldsets https://jsonapi.org/format/#fetching-sparse-fieldsets
 	fields map[string][]string
@@ -81,6 +82,27 @@ func MarshalLinks(l *Link) MarshalOption {
 func MarshalClientMode() MarshalOption {
 	return func(m *Marshaler) {
 		m.clientMode = true
+	}
+}
+
+// MarshalStrictNameValidation enables member name validation that is more strict than default.
+//
+// In addition to the basic naming rules from https://jsonapi.org/format/#document-member-names,
+// this option follows guidelines from https://jsonapi.org/recommendations/#naming.
+func MarshalStrictNameValidation() MarshalOption {
+	return func(m *Marshaler) {
+		m.memberNameValidationMode = strictValidation
+	}
+}
+
+// MarshalDisableNameValidation turns off member name validation, which may be useful for
+// compatibility or performance reasons.
+//
+// Note that this option allows you to use member names which do not conform to the JSON:API spec.
+// See https://jsonapi.org/format/#document-member-names.
+func MarshalDisableNameValidation() MarshalOption {
+	return func(m *Marshaler) {
+		m.memberNameValidationMode = disableValidation
 	}
 }
 

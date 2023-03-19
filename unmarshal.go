@@ -8,8 +8,9 @@ import (
 // Unmarshaler is configured internally via UnmarshalOption's passed to Unmarshal.
 // It's used to configure the Unmarshaling by decoding optional fields like Meta.
 type Unmarshaler struct {
-	unmarshalMeta bool
-	meta          any
+	unmarshalMeta            bool
+	meta                     any
+	memberNameValidationMode memberNameValidationMode
 }
 
 // UnmarshalOption allows for configuration of Unmarshaling.
@@ -20,6 +21,27 @@ func UnmarshalMeta(meta any) UnmarshalOption {
 	return func(m *Unmarshaler) {
 		m.unmarshalMeta = true
 		m.meta = meta
+	}
+}
+
+// UnmarshalStrictNameValidation enables member name validation that is more strict than default.
+//
+// In addition to the basic naming rules from https://jsonapi.org/format/#document-member-names,
+// this option follows guidelines from https://jsonapi.org/recommendations/#naming.
+func UnmarshalStrictNameValidation() UnmarshalOption {
+	return func(m *Unmarshaler) {
+		m.memberNameValidationMode = strictValidation
+	}
+}
+
+// UnmarshalDisableNameValidation turns off member name validation, which may be useful for
+// compatibility or performance reasons.
+//
+// Note that this option allows you to use member names which do not conform to the JSON:API spec.
+// See https://jsonapi.org/format/#document-member-names.
+func UnmarshalDisableNameValidation() UnmarshalOption {
+	return func(m *Unmarshaler) {
+		m.memberNameValidationMode = disableValidation
 	}
 }
 
