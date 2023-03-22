@@ -12,7 +12,12 @@ var (
 )
 
 func init() {
+	// properties of the default name regex:
+	// - at least one character, no case requirements
+	// - dash, space, and underscore allowed anywhere except the ends of the string
+	// - no characters below unicode 0080 allowed
 	defaultNameRegex = regexp.MustCompile(`^([a-zA-Z\d]|[^\x{0000}-\x{0080}])(([a-zA-Z\d]|[^\x{0000}-\x{0080}])|[-_ ]([a-zA-Z\d]|[^\x{0000}-\x{0080}]))*$`)
+
 	// properties of the strict name regex:
 	// - at least one lower case letter
 	// - camel case, and must end with a lower case letter
