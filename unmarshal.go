@@ -45,6 +45,15 @@ func UnmarshalDisableNameValidation() UnmarshalOption {
 	}
 }
 
+// relationshipUnmarshaler creates a new marshaler from a parent one for the sake of unmarshaling
+// relationship documents, by copying over relevant fields.
+func (m *Unmarshaler) relationshipUnmarshaler() *Unmarshaler {
+	rm := new(Unmarshaler)
+
+	rm.memberNameValidationMode = m.memberNameValidationMode
+	return rm
+}
+
 // Unmarshal parses the json:api encoded data and stores the result in the value pointed to by v.
 // If v is nil or not a pointer, Unmarshal returns an error.
 func Unmarshal(data []byte, v any, opts ...UnmarshalOption) (err error) {
@@ -240,10 +249,8 @@ func (ro *resourceObject) unmarshalFields(v any, m *Unmarshaler) error {
 				// relDocument has no relationship data, so there's nothing to do
 				continue
 			}
-			// relationship unmarshaler needed for name validation
-			rm := new(Unmarshaler)
-			rm.memberNameValidationMode = m.memberNameValidationMode
 
+			rm := m.relationshipUnmarshaler()
 			rel := reflect.New(derefType(ft.Type)).Interface()
 			if err := relDocument.unmarshal(rel, rm); err != nil {
 				return err

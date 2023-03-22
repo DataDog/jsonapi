@@ -106,6 +106,16 @@ func MarshalDisableNameValidation() MarshalOption {
 	}
 }
 
+// relationshipMarshaler creates a new marshaler from a parent one for the sake of marshaling
+// relationship documents, by copying over relevant fields.
+func (m *Marshaler) relationshipMarshaler(link *Link) *Marshaler {
+	rm := new(Marshaler)
+
+	rm.memberNameValidationMode = m.memberNameValidationMode
+	rm.link = link
+	return rm
+}
+
 // Marshal returns the json:api encoding of v. If v is type *Error or []*Error only the errors will be marshaled.
 func Marshal(v any, opts ...MarshalOption) (b []byte, err error) {
 	defer func() {
@@ -421,19 +431,16 @@ func makeResourceObject(v any, vt reflect.Type, m *Marshaler, isRelationship boo
 				continue
 			}
 
-			// relationship marshaler needed for links and name validation
-			rm := new(Marshaler)
-			rm.memberNameValidationMode = m.memberNameValidationMode
-
 			// if LinkableRelation is implemented include Document.Links for the related resource
+			var link *Link
 			if lv, ok := v.(LinkableRelation); ok {
-				link := lv.LinkRelation(fieldName)
+				link = lv.LinkRelation(fieldName)
 				if err := link.check(); err != nil {
 					return nil, err
 				}
-				rm.link = link
 			}
 
+			rm := m.relationshipMarshaler(link)
 			d, err := makeDocument(f.Interface(), rm, true)
 			if err != nil {
 				return nil, err
