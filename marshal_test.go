@@ -637,10 +637,12 @@ func TestMarshalClientMode(t *testing.T) {
 	}
 }
 
+// TestMarshalMemberNameValidation collects tests which verify that invalid member names are caught
+// during marshaling, no matter where they're placed. This test does not exhaustively test every
+// possible invalid name.
 func TestMarshalMemberNameValidation(t *testing.T) {
 	t.Parallel()
 
-	// this test verifies that invalid member names are caught no matter where they're placed
 	tests := []struct {
 		description       string
 		given             any

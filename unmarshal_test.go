@@ -416,6 +416,9 @@ func TestUnmarshalMeta(t *testing.T) {
 	}
 }
 
+// TestUnmarshalMemberNameValidation collects tests which verify that invalid member names are
+// caught during unmarshaling, no matter where they're placed. This test does not exhaustively test
+// every possible invalid name.
 func TestUnmarshalMemberNameValidation(t *testing.T) {
 	t.Parallel()
 
@@ -424,7 +427,6 @@ func TestUnmarshalMemberNameValidation(t *testing.T) {
 	articleWithInvalidRelationshipAttributeNameNotIncludedBody := `{"data":{"id":"1","type":"articles","relationships":{"author":{"data":{"id":"1","type":"author"}}}}}`
 	articlesWithOneInvalidResourceMetaMemberName := `{"data":[{"id":"1","type":"articles"},{"id":"1","type":"articles","meta":{"foo%":1}}]}`
 
-	// this test verifies that invalid member names are caught no matter where they're placed
 	tests := []struct {
 		description string
 		given       string
