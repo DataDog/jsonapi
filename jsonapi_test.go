@@ -45,6 +45,7 @@ var (
 	articleLinkedInvalidRelated                  = ArticleLinkedInvalidRelated{ID: "1"}
 	articleLinkedInvalidMissingFields            = ArticleLinkedInvalidMissingFields{ID: "1"}
 	articleLinkedInvalidMissingFieldsEmptyValues = ArticleLinkedInvalidMissingFieldsEmptyValues{ID: "1"}
+	articleLinkedInvalidSelfMeta                 = ArticleLinkedInvalidSelfMeta{ID: "1"}
 	articleOmitTitleFull                         = ArticleOmitTitle{ID: "1"}
 	articleOmitTitlePartial                      = ArticleOmitTitle{ID: "1", Subtitle: "A"}
 	articleAIntID                                = ArticleIntID{ID: 1, Title: "A"}
@@ -119,7 +120,8 @@ var (
 	}
 	errorsComplexSliceMany    = []Error{errorsSimpleStruct, errorsComplexStruct}
 	errorsComplexSliceManyPtr = []*Error{&errorsSimpleStruct, &errorsComplexStruct}
-	errorsWithLinkObject      = Error{ //nolint: errname
+	errorsWithInvalidMeta     = Error{ID: "1", Meta: "foo"} //nolint: errname
+	errorsWithLinkObject      = Error{                      //nolint: errname
 		Links: &ErrorLink{
 			About: &LinkObject{
 				Href: "A",
@@ -130,7 +132,8 @@ var (
 			},
 		},
 	}
-	errorsWithInvalidLink = Error{Links: &ErrorLink{About: 1}} //nolint: errname
+	errorsWithInvalidLink     = Error{Links: &ErrorLink{About: 1}}                                   //nolint: errname
+	errorsWithInvalidLinkMeta = Error{Links: &ErrorLink{About: &LinkObject{Href: "A", Meta: "foo"}}} //nolint: errname
 
 	// error bodies
 	errorsSimpleStructBody     = `{"errors":[{"title":"T"}]}`
@@ -232,6 +235,14 @@ type ArticleLinkedInvalidMissingFieldsEmptyValues struct {
 func (a *ArticleLinkedInvalidMissingFieldsEmptyValues) Link() *Link {
 	var lo LinkObject
 	return &Link{Self: "", Related: &lo}
+}
+
+type ArticleLinkedInvalidSelfMeta struct {
+	ID string `jsonapi:"primary,articles"`
+}
+
+func (a *ArticleLinkedInvalidSelfMeta) Link() *Link {
+	return &Link{Self: &LinkObject{Href: "foo", Meta: "foo"}}
 }
 
 type ArticleOmitTitle struct {

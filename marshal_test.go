@@ -132,6 +132,11 @@ func TestMarshal(t *testing.T) {
 			expect:      "",
 			expectError: ErrMissingLinkFields,
 		}, {
+			description: "invalid Link.Self.Meta",
+			given:       &articleLinkedInvalidSelfMeta,
+			expect:      "",
+			expectError: &TypeError{Actual: "string", Expected: []string{"struct", "map"}},
+		}, {
 			description: "string",
 			given:       "a",
 			expect:      "",
@@ -231,6 +236,11 @@ func TestMarshal(t *testing.T) {
 			expect:      errorsComplexSliceManyBody,
 			expectError: nil,
 		}, {
+			description: "Error with invalid meta",
+			given:       errorsWithInvalidMeta,
+			expect:      "",
+			expectError: &TypeError{Actual: "string", Expected: []string{"struct", "map"}},
+		}, {
 			description: "Error with link object",
 			given:       errorsWithLinkObject,
 			expect:      errorsWithLinkObjectBody,
@@ -240,6 +250,11 @@ func TestMarshal(t *testing.T) {
 			given:       errorsWithInvalidLink,
 			expect:      "",
 			expectError: &TypeError{Actual: "int", Expected: []string{"*LinkObject", "string"}},
+		}, {
+			description: "Error with invalid Links.About.Meta",
+			given:       errorsWithInvalidLinkMeta,
+			expect:      "",
+			expectError: &TypeError{Actual: "string", Expected: []string{"struct", "map"}},
 		}, {
 			description: "Error empty",
 			given:       Error{},
