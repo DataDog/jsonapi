@@ -68,8 +68,11 @@ func Unmarshal(data []byte, v any, opts ...UnmarshalOption) (err error) {
 	}
 
 	var d document
-	err = json.Unmarshal(data, &d)
-	if err != nil {
+	if err = json.Unmarshal(data, &d); err != nil {
+		return
+	}
+
+	if err = validateJSONMemberNames(data, m.memberNameValidationMode); err != nil {
 		return
 	}
 
@@ -91,12 +94,12 @@ func (d *document) unmarshal(v any, m *Unmarshaler) (err error) {
 	}
 
 	if d.hasMany {
-		err = unmarshalResourceObjects(d.DataMany, v)
+		err = unmarshalResourceObjects(d.DataMany, v, m)
 		if err != nil {
 			return
 		}
 	} else {
-		err = d.DataOne.unmarshal(v)
+		err = d.DataOne.unmarshal(v, m)
 		if err != nil {
 			return
 		}
@@ -121,11 +124,14 @@ func (d *document) unmarshalOptionalFields(m *Unmarshaler) error {
 		if err := json.Unmarshal(b, m.meta); err != nil {
 			return err
 		}
+		if err := validateJSONMemberNames(b, m.memberNameValidationMode); err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
-func unmarshalResourceObjects(ros []*resourceObject, v any) error {
+func unmarshalResourceObjects(ros []*resourceObject, v any, m *Unmarshaler) error {
 	outType := derefType(reflect.TypeOf(v))
 	outValue := derefValue(reflect.ValueOf(v))
 
@@ -137,7 +143,7 @@ func unmarshalResourceObjects(ros []*resourceObject, v any) error {
 	for _, ro := range ros {
 		// unmarshal the resource object into an empty value of the slices element type
 		outElem := reflect.New(derefType(outType.Elem())).Interface()
-		if err := ro.unmarshal(outElem); err != nil {
+		if err := ro.unmarshal(outElem, m); err != nil {
 			return err
 		}
 
@@ -158,14 +164,14 @@ func unmarshalResourceObjects(ros []*resourceObject, v any) error {
 	return nil
 }
 
-func (ro *resourceObject) unmarshal(v any) error {
+func (ro *resourceObject) unmarshal(v any, m *Unmarshaler) error {
 	// first, it must be a struct since we'll be parsing the jsonapi struct tags
 	vt := reflect.TypeOf(v)
 	if derefType(vt).Kind() != reflect.Struct {
 		return &TypeError{Actual: vt.String(), Expected: []string{"struct"}}
 	}
 
-	if err := ro.unmarshalFields(v); err != nil {
+	if err := ro.unmarshalFields(v, m); err != nil {
 		return err
 	}
 
@@ -177,7 +183,7 @@ func (ro *resourceObject) unmarshal(v any) error {
 }
 
 // unmarshalFields unmarshals a resource object into all non-attribute struct fields
-func (ro *resourceObject) unmarshalFields(v any) error {
+func (ro *resourceObject) unmarshalFields(v any, m *Unmarshaler) error {
 	setPrimary := false
 	rv := derefValue(reflect.ValueOf(v))
 	rt := reflect.TypeOf(rv.Interface())
@@ -201,6 +207,10 @@ func (ro *resourceObject) unmarshalFields(v any) error {
 			}
 			if ro.Type != jsonapiTag.resourceType {
 				return &TypeError{Actual: ro.Type, Expected: []string{jsonapiTag.resourceType}}
+			}
+			if !isValidMemberName(ro.Type, m.memberNameValidationMode) {
+				// type names count as member names
+				return &MemberNameValidationError{ro.Type}
 			}
 			// to unmarshal the id we follow these rules
 			//     1. Use UnmarshalIdentifier if it is implemented
@@ -230,9 +240,12 @@ func (ro *resourceObject) unmarshalFields(v any) error {
 				// relDocument has no relationship data, so there's nothing to do
 				continue
 			}
+			// relationship unmarshaler needed for name validation
+			rm := new(Unmarshaler)
+			rm.memberNameValidationMode = m.memberNameValidationMode
 
 			rel := reflect.New(derefType(ft.Type)).Interface()
-			if err := relDocument.unmarshal(rel, nil); err != nil {
+			if err := relDocument.unmarshal(rel, rm); err != nil {
 				return err
 			}
 			setFieldValue(fv, rel)

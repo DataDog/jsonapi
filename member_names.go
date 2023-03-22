@@ -1,6 +1,10 @@
 package jsonapi
 
-import "regexp"
+import (
+	"encoding/json"
+	"fmt"
+	"regexp"
+)
 
 var (
 	defaultNameRegex *regexp.Regexp
@@ -48,4 +52,37 @@ func isValidMemberName(name string, mode memberNameValidationMode) bool {
 	default:
 		return defaultNameRegex.MatchString(name)
 	}
+}
+
+func validateMapMemberNames(m map[string]any, mode memberNameValidationMode) error {
+	for member, val := range m {
+		if !isValidMemberName(member, mode) {
+			return &MemberNameValidationError{member}
+		}
+		switch nested := val.(type) {
+		case map[string]any:
+			if err := validateMapMemberNames(nested, mode); err != nil {
+				return err
+			}
+		case []any:
+			for _, entry := range nested {
+				if subMap, ok := entry.(map[string]any); ok {
+					if err := validateMapMemberNames(subMap, mode); err != nil {
+						return err
+					}
+				}
+			}
+		default:
+			continue
+		}
+	}
+	return nil
+}
+
+func validateJSONMemberNames(b []byte, mode memberNameValidationMode) error {
+	var m map[string]any
+	if err := json.Unmarshal(b, &m); err != nil {
+		return fmt.Errorf("unexpected unmarshal failure: %w", err)
+	}
+	return validateMapMemberNames(m, mode)
 }

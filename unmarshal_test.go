@@ -415,3 +415,157 @@ func TestUnmarshalMeta(t *testing.T) {
 		})
 	}
 }
+
+func TestUnmarshalMemberNameValidation(t *testing.T) {
+	t.Parallel()
+
+	articleWithInvalidToplevelMetaMemberNameBody := `{"data":{"id":"1","type":"articles","attributes":{"title":"A"}},"meta":{"foo%":2}}`
+	articleWithInvalidJSONAPIMetaMemberNameBody := `{"data":{"id":"1","type":"articles","attributes":{"title":"A"}},"jsonapi":{"version":"1.0","meta":{"foo%":1}}}`
+	articleWithInvalidRelationshipAttributeNameNotIncludedBody := `{"data":{"id":"1","type":"articles","relationships":{"author":{"data":{"id":"1","type":"author"}}}}}`
+	articlesWithOneInvalidResourceMetaMemberName := `{"data":[{"id":"1","type":"articles"},{"id":"1","type":"articles","meta":{"foo%":1}}]}`
+
+	// this test verifies that invalid member names are caught no matter where they're placed
+	tests := []struct {
+		description string
+		given       string
+		do          func(body []byte, opts ...UnmarshalOption) error
+		expectError error
+	}{
+		{
+			description: "Article with valid member names",
+			given:       articleABody,
+			do: func(body []byte, opts ...UnmarshalOption) error {
+				var a Article
+				err := Unmarshal(body, &a, opts...)
+				return err
+			},
+			expectError: nil,
+		}, {
+			description: "Author with invalid type name",
+			given:       authorWithInvalidTypeNameBody,
+			do: func(body []byte, opts ...UnmarshalOption) error {
+				var a AuthorWithInvalidTypeName
+				err := Unmarshal(body, &a, opts...)
+				return err
+			},
+			expectError: &MemberNameValidationError{"aut%hor"},
+		}, {
+			description: "Author with invalid attribute member name",
+			given:       authorWithInvalidAttributeNameBody,
+			do: func(body []byte, opts ...UnmarshalOption) error {
+				var a AuthorWithInvalidAttributeName
+				err := Unmarshal(body, &a, opts...)
+				return err
+			},
+			expectError: &MemberNameValidationError{"na%me"},
+		}, {
+			description: "Article with invalid resource meta member name",
+			given:       articleWithInvalidResourceMetaMemberNameBody,
+			do: func(body []byte, opts ...UnmarshalOption) error {
+				var a ArticleWithGenericMeta
+				err := Unmarshal(body, &a, opts...)
+				return err
+			},
+			expectError: &MemberNameValidationError{"foo%"},
+		}, {
+			description: "Article with invalid top-level meta member name",
+			given:       articleWithInvalidToplevelMetaMemberNameBody,
+			do: func(body []byte, opts ...UnmarshalOption) error {
+				var (
+					a Article
+					m map[string]any
+				)
+				opts = append(opts, UnmarshalMeta(&m))
+				err := Unmarshal(body, &a, opts...)
+				return err
+			},
+			expectError: &MemberNameValidationError{"foo%"},
+		}, {
+			description: "Article with invalid link meta member name",
+			given:       articleWithInvalidLinkMetaMemberNameBody,
+			do: func(body []byte, opts ...UnmarshalOption) error {
+				var a ArticleWithInvalidLinkMetaMemberName
+				err := Unmarshal(body, &a, opts...)
+				return err
+			},
+			expectError: &MemberNameValidationError{"foo%"},
+		}, {
+			description: "Article with invalid jsonapi meta member name",
+			given:       articleWithInvalidJSONAPIMetaMemberNameBody,
+			do: func(body []byte, opts ...UnmarshalOption) error {
+				var a Article
+				err := Unmarshal(body, &a, opts...)
+				return err
+			},
+			expectError: &MemberNameValidationError{"foo%"},
+		}, {
+			description: "Article with invalid relationship name",
+			given:       articleWithInvalidRelationshipNameBody,
+			do: func(body []byte, opts ...UnmarshalOption) error {
+				var a ArticleWithInvalidRelationshipName
+				err := Unmarshal(body, &a, opts...)
+				return err
+			},
+			expectError: &MemberNameValidationError{"aut%hor"},
+		}, {
+			description: "Article with invalid relationship type name body",
+			given:       articleWithInvalidRelationshipTypeNameBody,
+			do: func(body []byte, opts ...UnmarshalOption) error {
+				var a ArticleWithInvalidRelationshipTypeName
+				err := Unmarshal(body, &a, opts...)
+				return err
+			},
+			expectError: &MemberNameValidationError{"aut%hor"},
+		}, {
+			description: "Article with invalid relationship attribute member names not included",
+			given:       articleWithInvalidRelationshipAttributeNameNotIncludedBody,
+			do: func(body []byte, opts ...UnmarshalOption) error {
+				var a ArticleWithInvalidRelationshipAttributeName
+				err := Unmarshal(body, &a, opts...)
+				return err
+			},
+			expectError: nil,
+		}, {
+			description: "Article with invalid relationship attribute member names included",
+			given:       articleWithInvalidRelationshipAttributeNameIncludedBody,
+			do: func(body []byte, opts ...UnmarshalOption) error {
+				var a ArticleWithInvalidRelationshipAttributeName
+				err := Unmarshal(body, &a, opts...)
+				return err
+			},
+			expectError: &MemberNameValidationError{"na%me"},
+		}, {
+			description: "[]*Article with one invalid resource meta member name",
+			given:       articlesWithOneInvalidResourceMetaMemberName,
+			do: func(body []byte, opts ...UnmarshalOption) error {
+				var a []*ArticleWithGenericMeta
+				err := Unmarshal(body, &a, opts...)
+				return err
+			},
+			expectError: &MemberNameValidationError{"foo%"},
+		}, {
+			description: "Website with invalid nested relationship type member name",
+			given:       websiteWithInvalidNestedRelationshipTypeNameBody,
+			do: func(body []byte, opts ...UnmarshalOption) error {
+				var a WebsiteWithInvalidNestedRelationshipTypeName
+				err := Unmarshal(body, &a, opts...)
+				return err
+			},
+			expectError: &MemberNameValidationError{"aut%hor"},
+		},
+	}
+
+	for i, tc := range tests {
+		tc := tc
+		t.Run(fmt.Sprintf("%02d", i), func(t *testing.T) {
+			t.Parallel()
+			t.Log(tc.description)
+
+			err := tc.do([]byte(tc.given))
+			is.EqualError(t, tc.expectError, err)
+
+			err = tc.do([]byte(tc.given), UnmarshalDisableNameValidation())
+			is.MustNoError(t, err)
+		})
+	}
+}

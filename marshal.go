@@ -135,6 +135,8 @@ func Marshal(v any, opts ...MarshalOption) (b []byte, err error) {
 		return
 	}
 
+	err = validateJSONMemberNames(b, m.memberNameValidationMode)
+
 	return
 }
 
@@ -344,6 +346,10 @@ func makeResourceObject(v any, vt reflect.Type, m *Marshaler, isRelationship boo
 		switch tag.directive {
 		case primary:
 			ro.Type = tag.resourceType
+			if !isValidMemberName(ro.Type, m.memberNameValidationMode) {
+				// type names count as member names
+				return nil, &MemberNameValidationError{ro.Type}
+			}
 
 			// to marshal the id we follow these rules
 			//     1. Use MarshalIdentifier if it is implemented
@@ -415,7 +421,9 @@ func makeResourceObject(v any, vt reflect.Type, m *Marshaler, isRelationship boo
 				continue
 			}
 
+			// relationship marshaler needed for links and name validation
 			rm := new(Marshaler)
+			rm.memberNameValidationMode = m.memberNameValidationMode
 
 			// if LinkableRelation is implemented include Document.Links for the related resource
 			if lv, ok := v.(LinkableRelation); ok {
