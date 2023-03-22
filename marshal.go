@@ -18,12 +18,13 @@ func init() {
 // Marshaler is configured internally via MarshalOption's passed to Marshal.
 // It's used to configure the Marshaling by including optional fields like Meta or JSONAPI.
 type Marshaler struct {
-	meta           any
-	includeJSONAPI bool
-	jsonAPImeta    any
-	included       []any
-	link           *Link
-	clientMode     bool
+	meta                     any
+	includeJSONAPI           bool
+	jsonAPImeta              any
+	included                 []any
+	link                     *Link
+	clientMode               bool
+	memberNameValidationMode memberNameValidationMode
 
 	// fields support sparse fieldsets https://jsonapi.org/format/#fetching-sparse-fieldsets
 	fields map[string][]string
@@ -84,6 +85,37 @@ func MarshalClientMode() MarshalOption {
 	}
 }
 
+// MarshalStrictNameValidation enables member name validation that is more strict than default.
+//
+// In addition to the basic naming rules from https://jsonapi.org/format/#document-member-names,
+// this option follows guidelines from https://jsonapi.org/recommendations/#naming.
+func MarshalStrictNameValidation() MarshalOption {
+	return func(m *Marshaler) {
+		m.memberNameValidationMode = strictValidation
+	}
+}
+
+// MarshalDisableNameValidation turns off member name validation, which may be useful for
+// compatibility or performance reasons.
+//
+// Note that this option allows you to use member names which do not conform to the JSON:API spec.
+// See https://jsonapi.org/format/#document-member-names.
+func MarshalDisableNameValidation() MarshalOption {
+	return func(m *Marshaler) {
+		m.memberNameValidationMode = disableValidation
+	}
+}
+
+// relationshipMarshaler creates a new marshaler from a parent one for the sake of marshaling
+// relationship documents, by copying over relevant fields.
+func (m *Marshaler) relationshipMarshaler(link *Link) *Marshaler {
+	rm := new(Marshaler)
+
+	rm.memberNameValidationMode = m.memberNameValidationMode
+	rm.link = link
+	return rm
+}
+
 // Marshal returns the json:api encoding of v. If v is type *Error or []*Error only the errors will be marshaled.
 func Marshal(v any, opts ...MarshalOption) (b []byte, err error) {
 	defer func() {
@@ -112,6 +144,8 @@ func Marshal(v any, opts ...MarshalOption) (b []byte, err error) {
 	if err != nil {
 		return
 	}
+
+	err = validateJSONMemberNames(b, m.memberNameValidationMode)
 
 	return
 }
@@ -322,6 +356,10 @@ func makeResourceObject(v any, vt reflect.Type, m *Marshaler, isRelationship boo
 		switch tag.directive {
 		case primary:
 			ro.Type = tag.resourceType
+			if !isValidMemberName(ro.Type, m.memberNameValidationMode) {
+				// type names count as member names
+				return nil, &MemberNameValidationError{ro.Type}
+			}
 
 			// to marshal the id we follow these rules
 			//     1. Use MarshalIdentifier if it is implemented
@@ -393,17 +431,16 @@ func makeResourceObject(v any, vt reflect.Type, m *Marshaler, isRelationship boo
 				continue
 			}
 
-			rm := new(Marshaler)
-
 			// if LinkableRelation is implemented include Document.Links for the related resource
+			var link *Link
 			if lv, ok := v.(LinkableRelation); ok {
-				link := lv.LinkRelation(fieldName)
+				link = lv.LinkRelation(fieldName)
 				if err := link.check(); err != nil {
 					return nil, err
 				}
-				rm.link = link
 			}
 
+			rm := m.relationshipMarshaler(link)
 			d, err := makeDocument(f.Interface(), rm, true)
 			if err != nil {
 				return nil, err

@@ -8,8 +8,9 @@ import (
 // Unmarshaler is configured internally via UnmarshalOption's passed to Unmarshal.
 // It's used to configure the Unmarshaling by decoding optional fields like Meta.
 type Unmarshaler struct {
-	unmarshalMeta bool
-	meta          any
+	unmarshalMeta            bool
+	meta                     any
+	memberNameValidationMode memberNameValidationMode
 }
 
 // UnmarshalOption allows for configuration of Unmarshaling.
@@ -21,6 +22,36 @@ func UnmarshalMeta(meta any) UnmarshalOption {
 		m.unmarshalMeta = true
 		m.meta = meta
 	}
+}
+
+// UnmarshalStrictNameValidation enables member name validation that is more strict than default.
+//
+// In addition to the basic naming rules from https://jsonapi.org/format/#document-member-names,
+// this option follows guidelines from https://jsonapi.org/recommendations/#naming.
+func UnmarshalStrictNameValidation() UnmarshalOption {
+	return func(m *Unmarshaler) {
+		m.memberNameValidationMode = strictValidation
+	}
+}
+
+// UnmarshalDisableNameValidation turns off member name validation, which may be useful for
+// compatibility or performance reasons.
+//
+// Note that this option allows you to use member names which do not conform to the JSON:API spec.
+// See https://jsonapi.org/format/#document-member-names.
+func UnmarshalDisableNameValidation() UnmarshalOption {
+	return func(m *Unmarshaler) {
+		m.memberNameValidationMode = disableValidation
+	}
+}
+
+// relationshipUnmarshaler creates a new marshaler from a parent one for the sake of unmarshaling
+// relationship documents, by copying over relevant fields.
+func (m *Unmarshaler) relationshipUnmarshaler() *Unmarshaler {
+	rm := new(Unmarshaler)
+
+	rm.memberNameValidationMode = m.memberNameValidationMode
+	return rm
 }
 
 // Unmarshal parses the json:api encoded data and stores the result in the value pointed to by v.
@@ -46,8 +77,11 @@ func Unmarshal(data []byte, v any, opts ...UnmarshalOption) (err error) {
 	}
 
 	var d document
-	err = json.Unmarshal(data, &d)
-	if err != nil {
+	if err = json.Unmarshal(data, &d); err != nil {
+		return
+	}
+
+	if err = validateJSONMemberNames(data, m.memberNameValidationMode); err != nil {
 		return
 	}
 
@@ -69,12 +103,12 @@ func (d *document) unmarshal(v any, m *Unmarshaler) (err error) {
 	}
 
 	if d.hasMany {
-		err = unmarshalResourceObjects(d.DataMany, v)
+		err = unmarshalResourceObjects(d.DataMany, v, m)
 		if err != nil {
 			return
 		}
 	} else {
-		err = d.DataOne.unmarshal(v)
+		err = d.DataOne.unmarshal(v, m)
 		if err != nil {
 			return
 		}
@@ -99,11 +133,14 @@ func (d *document) unmarshalOptionalFields(m *Unmarshaler) error {
 		if err := json.Unmarshal(b, m.meta); err != nil {
 			return err
 		}
+		if err := validateJSONMemberNames(b, m.memberNameValidationMode); err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
-func unmarshalResourceObjects(ros []*resourceObject, v any) error {
+func unmarshalResourceObjects(ros []*resourceObject, v any, m *Unmarshaler) error {
 	outType := derefType(reflect.TypeOf(v))
 	outValue := derefValue(reflect.ValueOf(v))
 
@@ -115,7 +152,7 @@ func unmarshalResourceObjects(ros []*resourceObject, v any) error {
 	for _, ro := range ros {
 		// unmarshal the resource object into an empty value of the slices element type
 		outElem := reflect.New(derefType(outType.Elem())).Interface()
-		if err := ro.unmarshal(outElem); err != nil {
+		if err := ro.unmarshal(outElem, m); err != nil {
 			return err
 		}
 
@@ -136,14 +173,14 @@ func unmarshalResourceObjects(ros []*resourceObject, v any) error {
 	return nil
 }
 
-func (ro *resourceObject) unmarshal(v any) error {
+func (ro *resourceObject) unmarshal(v any, m *Unmarshaler) error {
 	// first, it must be a struct since we'll be parsing the jsonapi struct tags
 	vt := reflect.TypeOf(v)
 	if derefType(vt).Kind() != reflect.Struct {
 		return &TypeError{Actual: vt.String(), Expected: []string{"struct"}}
 	}
 
-	if err := ro.unmarshalFields(v); err != nil {
+	if err := ro.unmarshalFields(v, m); err != nil {
 		return err
 	}
 
@@ -155,7 +192,7 @@ func (ro *resourceObject) unmarshal(v any) error {
 }
 
 // unmarshalFields unmarshals a resource object into all non-attribute struct fields
-func (ro *resourceObject) unmarshalFields(v any) error {
+func (ro *resourceObject) unmarshalFields(v any, m *Unmarshaler) error {
 	setPrimary := false
 	rv := derefValue(reflect.ValueOf(v))
 	rt := reflect.TypeOf(rv.Interface())
@@ -179,6 +216,10 @@ func (ro *resourceObject) unmarshalFields(v any) error {
 			}
 			if ro.Type != jsonapiTag.resourceType {
 				return &TypeError{Actual: ro.Type, Expected: []string{jsonapiTag.resourceType}}
+			}
+			if !isValidMemberName(ro.Type, m.memberNameValidationMode) {
+				// type names count as member names
+				return &MemberNameValidationError{ro.Type}
 			}
 			// to unmarshal the id we follow these rules
 			//     1. Use UnmarshalIdentifier if it is implemented
@@ -209,8 +250,9 @@ func (ro *resourceObject) unmarshalFields(v any) error {
 				continue
 			}
 
+			rm := m.relationshipUnmarshaler()
 			rel := reflect.New(derefType(ft.Type)).Interface()
-			if err := relDocument.unmarshal(rel, nil); err != nil {
+			if err := relDocument.unmarshal(rel, rm); err != nil {
 				return err
 			}
 			setFieldValue(fv, rel)

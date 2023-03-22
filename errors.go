@@ -79,6 +79,16 @@ func (e *PartialLinkageError) Error() string {
 	)
 }
 
+// MemberNameValidationError indicates that a document member name failed a validation step.
+type MemberNameValidationError struct {
+	MemberName string
+}
+
+// Error implements the error interface.
+func (e *MemberNameValidationError) Error() string {
+	return fmt.Sprintf("invalid member name: %s", e.MemberName)
+}
+
 // ErrorLink represents a JSON:API error links object as defined by https://jsonapi.org/format/1.0/#error-objects.
 type ErrorLink struct {
 	About any `json:"about,omitempty"`

@@ -76,6 +76,19 @@ var (
 	articleRelatedCommentsNested   = ArticleRelated{ID: "1", Title: "A", Comments: []*Comment{&commentAWithAuthor}}
 	articleRelatedComplete         = ArticleRelated{ID: "1", Title: "A", Author: &authorAWithMeta, Comments: commentsAB}
 
+	// articles with non-spec-conforming member names
+	authorWithInvalidTypeName                    = AuthorWithInvalidTypeName{ID: "1"}
+	authorWithInvalidAttributeName               = AuthorWithInvalidAttributeName{ID: "1", Name: "A"}
+	articleWithInvalidResourceMetaMemberName     = ArticleWithGenericMeta{ID: "1", Meta: map[string]any{"foo%": 2}}
+	articleWithInvalidLinkMetaMemberName         = ArticleWithInvalidLinkMetaMemberName{ID: "1"}
+	articleWithInvalidRelationshipName           = ArticleWithInvalidRelationshipName{ID: "1", Author: &authorA}
+	articleWithInvalidRelationshipTypeName       = ArticleWithInvalidRelationshipTypeName{ID: "1", Author: &authorWithInvalidTypeName}
+	articleWithInvalidRelationshipAttributeName  = ArticleWithInvalidRelationshipAttributeName{ID: "1", Author: &authorWithInvalidAttributeName}
+	websiteWithInvalidNestedRelationshipTypeName = WebsiteWithInvalidNestedRelationshipTypeName{
+		ID:       "1",
+		Articles: []*ArticleWithInvalidRelationshipTypeName{{ID: "2"}, &articleWithInvalidRelationshipTypeName},
+	}
+
 	// article bodies
 	emptyBody                         = `{"data":[]}`
 	articleABody                      = `{"data":{"type":"articles","id":"1","attributes":{"title":"A"}}}`
@@ -103,6 +116,16 @@ var (
 	articleRelatedCompleteWithIncludeBody       = `{"data":{"id":"1","type":"articles","attributes":{"title":"A"},"relationships":{"author":{"data":{"id":"1","type":"author"}},"comments":{"data":[{"id":"1","type":"comments"},{"id":"2","type":"comments"}]}}},"included":[{"id":"1","type":"author","attributes":{"name":"A"}},{"id":"1","type":"comments","attributes":{"body":"A"}},{"id":"2","type":"comments","attributes":{"body":"B"}}]}`
 	articleRelatedCommentsNestedWithIncludeBody = `{"data":{"id":"1","type":"articles","attributes":{"title":"A"},"relationships":{"comments":{"data":[{"id":"1","type":"comments"}],"links":{"self":"http://example.com/articles/1/relationships/comments","related":"http://example.com/articles/1/comments"}}}},"included":[{"id":"1","type":"comments","attributes":{"body":"A"},"relationships":{"author":{"data":{"id":"1","type":"author"},"links":{"self":"http://example.com/comments/1/relationships/author","related":"http://example.com/comments/1/author"}}}},{"id":"1","type":"author","attributes":{"name":"A"}}]}`
 	articleWithIncludeOnlyBody                  = `{"data":{"id":"1","type":"articles","attributes":{"title":"A"}},"included":[{"id":"1","type":"author","attributes":{"name":"A"}}]}`
+
+	// articles with non-conforming member name bodies
+	authorWithInvalidTypeNameBody                           = `{"data":{"id":"1","type":"aut%hor"}}`
+	authorWithInvalidAttributeNameBody                      = `{"data":{"id":"1","type":"author","attributes":{"na%me":"A"}}}`
+	articleWithInvalidResourceMetaMemberNameBody            = `{"data":{"id":"1","type":"articles","meta":{"foo%":2}}}`
+	articleWithInvalidLinkMetaMemberNameBody                = `{"data":{"id":"1","type":"articles","links":{"self":{"href":"foo","meta":{"foo%":1}}}}}`
+	articleWithInvalidRelationshipNameBody                  = `{"data":{"id":"1","type":"articles","relationships":{"aut%hor":{"data":{"id":"1","type":"author"}}}}}`
+	articleWithInvalidRelationshipTypeNameBody              = `{"data":{"id":"1","type":"articles","relationships":{"author":{"data":{"id":"1","type":"aut%hor"}}}}}`
+	articleWithInvalidRelationshipAttributeNameIncludedBody = `{"data":{"id":"1","type":"articles","relationships":{"author":{"data":{"id":"1","type":"author"}}}},"included":[{"id":"1","type":"author","attributes":{"na%me":"A"}}]}`
+	websiteWithInvalidNestedRelationshipTypeNameBody        = `{"data":{"id":"1","type":"website","relationships":{"articles":{"data":[{"id":"2","type":"articles"},{"id":"1","type":"articles"}]}}},"included":[{"id":"2","type":"articles","relationships":{"author":{"data":null}}},{"id":"1","type":"articles","relationships":{"author":{"data":{"id":"1","type":"aut%hor"}}}},{"id":"1","type":"aut%hor"}]}`
 
 	// error structs
 	errorsSimpleStruct         = Error{Title: "T"}           //nolint: errname
@@ -358,4 +381,51 @@ type ArticleEmbeddedPointer struct {
 
 	ID    string `jsonapi:"primary,articles"`
 	Title string `jsonapi:"attribute" json:"title"`
+}
+
+type ArticleWithGenericMeta struct {
+	ID   string         `jsonapi:"primary,articles"`
+	Meta map[string]any `jsonapi:"meta"`
+}
+
+type AuthorWithInvalidTypeName struct {
+	ID string `jsonapi:"primary,aut%hor"`
+}
+
+type AuthorWithInvalidAttributeName struct {
+	ID   string `jsonapi:"primary,author"`
+	Name string `jsonapi:"attribute" json:"na%me"`
+}
+
+type ArticleWithInvalidLinkMetaMemberName struct {
+	ID string `jsonapi:"primary,articles"`
+}
+
+func (a *ArticleWithInvalidLinkMetaMemberName) Link() *Link {
+	return &Link{
+		Self: &LinkObject{
+			Href: "foo",
+			Meta: map[string]int{"foo%": 1},
+		},
+	}
+}
+
+type ArticleWithInvalidRelationshipName struct {
+	ID     string  `jsonapi:"primary,articles"`
+	Author *Author `jsonapi:"relationship" json:"aut%hor"`
+}
+
+type ArticleWithInvalidRelationshipTypeName struct {
+	ID     string                     `jsonapi:"primary,articles"`
+	Author *AuthorWithInvalidTypeName `jsonapi:"relationship" json:"author"`
+}
+
+type ArticleWithInvalidRelationshipAttributeName struct {
+	ID     string                          `jsonapi:"primary,articles"`
+	Author *AuthorWithInvalidAttributeName `jsonapi:"relationship" json:"author"`
+}
+
+type WebsiteWithInvalidNestedRelationshipTypeName struct {
+	ID       string                                    `jsonapi:"primary,website"`
+	Articles []*ArticleWithInvalidRelationshipTypeName `jsonapi:"relationship" json:"articles"`
 }

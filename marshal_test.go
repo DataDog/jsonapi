@@ -636,3 +636,100 @@ func TestMarshalClientMode(t *testing.T) {
 		})
 	}
 }
+
+// TestMarshalMemberNameValidation collects tests which verify that invalid member names are caught
+// during marshaling, no matter where they're placed. This test does not exhaustively test every
+// possible invalid name.
+func TestMarshalMemberNameValidation(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		description       string
+		given             any
+		expectError       error
+		additionalOptions []MarshalOption
+	}{
+		{
+			description: "Article with valid member names",
+			given:       &articleA,
+			expectError: nil,
+		}, {
+			description: "Author with invalid type name",
+			given:       &authorWithInvalidTypeName,
+			expectError: &MemberNameValidationError{"aut%hor"},
+		}, {
+			description: "Author with invalid attribute name",
+			given:       &authorWithInvalidAttributeName,
+			expectError: &MemberNameValidationError{"na%me"},
+		}, {
+			description: "Article with invalid resource meta member name",
+			given:       &articleWithInvalidResourceMetaMemberName,
+			expectError: &MemberNameValidationError{"foo%"},
+		}, {
+			description:       "Article with invalid top-level meta member name",
+			given:             &articleA,
+			expectError:       &MemberNameValidationError{"foo%"},
+			additionalOptions: []MarshalOption{MarshalMeta(map[string]any{"foo%": 2})},
+		}, {
+			description:       "Article with invalid jsonapi meta member name",
+			given:             &articleA,
+			expectError:       &MemberNameValidationError{"foo%"},
+			additionalOptions: []MarshalOption{MarshalJSONAPI(map[string]any{"foo%": 1})},
+		}, {
+			description: "Article with invalid link meta member name",
+			given:       &articleWithInvalidLinkMetaMemberName,
+			expectError: &MemberNameValidationError{"foo%"},
+		}, {
+			description: "Article with invalid relationship name",
+			given:       &articleWithInvalidRelationshipName,
+			expectError: &MemberNameValidationError{"aut%hor"},
+		}, {
+			description: "Article with invalid relationship type name",
+			given:       &articleWithInvalidRelationshipTypeName,
+			expectError: &MemberNameValidationError{"aut%hor"},
+		}, {
+			description: "Article with invalid relationship attribute name not included",
+			given:       &articleWithInvalidRelationshipAttributeName,
+			expectError: nil,
+		}, {
+			description:       "Article with invalid relationship attribute name included",
+			given:             &articleWithInvalidRelationshipAttributeName,
+			expectError:       &MemberNameValidationError{"na%me"},
+			additionalOptions: []MarshalOption{MarshalInclude(&authorWithInvalidAttributeName)},
+		}, {
+			description: "Articles with one invalid resource meta member name",
+			given: []*ArticleWithGenericMeta{
+				{ID: "1"}, {ID: "1", Meta: map[string]any{"foo%": 1}},
+			},
+			expectError: &MemberNameValidationError{"foo%"},
+		}, {
+			description: "Website with invalid nested relationship type name",
+			given:       &websiteWithInvalidNestedRelationshipTypeName,
+			expectError: &MemberNameValidationError{"aut%hor"},
+			additionalOptions: []MarshalOption{
+				MarshalInclude(
+					websiteWithInvalidNestedRelationshipTypeName.Articles[0],
+					websiteWithInvalidNestedRelationshipTypeName.Articles[1],
+					websiteWithInvalidNestedRelationshipTypeName.Articles[1].Author,
+				),
+			},
+		},
+	}
+
+	for i, tc := range tests {
+		tc := tc
+		t.Run(fmt.Sprintf("%02d", i), func(t *testing.T) {
+			t.Parallel()
+			t.Log(tc.description)
+
+			opts := tc.additionalOptions
+			_, err := Marshal(tc.given, opts...)
+			is.EqualError(t, tc.expectError, err)
+
+			opts = append(opts, MarshalDisableNameValidation())
+			_, err = Marshal(tc.given, opts...)
+			is.MustNoError(t, err)
+		})
+	}
+
+}
