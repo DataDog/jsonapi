@@ -184,11 +184,7 @@ func (ro *resourceObject) unmarshal(v any, m *Unmarshaler) error {
 		return err
 	}
 
-	if err := ro.unmarshalAttributes(v); err != nil {
-		return err
-	}
-
-	return nil
+	return ro.unmarshalAttributes(v)
 }
 
 // unmarshalFields unmarshals a resource object into all non-attribute struct fields
@@ -283,8 +279,5 @@ func (ro *resourceObject) unmarshalAttributes(v any) error {
 	if err != nil {
 		return err
 	}
-	if err := json.Unmarshal(b, v); err != nil {
-		return err
-	}
-	return nil
+	return json.Unmarshal(b, v)
 }
