@@ -39,6 +39,7 @@ func TestIsValidMemberName(t *testing.T) {
 	for mode, names := range testValidations {
 		mode := mode
 		for _, name := range names {
+			name := name
 			t.Run(name, func(t *testing.T) {
 				t.Parallel()
 
