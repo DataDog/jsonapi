@@ -2,6 +2,7 @@ package jsonapi
 
 import (
 	"encoding/json"
+	"fmt"
 	"reflect"
 )
 
@@ -220,7 +221,8 @@ func (ro *resourceObject) unmarshalFields(v any, m *Unmarshaler) error {
 			// to unmarshal the id we follow these rules
 			//     1. Use UnmarshalIdentifier if it is implemented
 			//     2. Use the value directly if it is a string
-			//     3. Fail
+			//     3. Use fmt.Stinger if it is implemented
+			//     4. Fail
 			if vu, ok := v.(UnmarshalIdentifier); ok {
 				if err := vu.UnmarshalID(ro.ID); err != nil {
 					return err
@@ -228,8 +230,15 @@ func (ro *resourceObject) unmarshalFields(v any, m *Unmarshaler) error {
 				setPrimary = true
 				continue
 			}
-			if fv.Kind() == reflect.String {
-				fv.SetString(ro.ID)
+
+			if vs, ok := v.(string); ok {
+				ro.ID = vs
+				setPrimary = true
+				continue
+			}
+
+			if _, ok := v.(fmt.Stringer); ok {
+				ro.ID = fmt.Sprintf("%s", v)
 				setPrimary = true
 				continue
 			}
