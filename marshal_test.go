@@ -167,6 +167,16 @@ func TestMarshal(t *testing.T) {
 			expect:      articlesABBody,
 			expectError: nil,
 		}, {
+			description: "*ArticleEncodingIntID (encoding.TextMarshaler)",
+			given:       &articleAEncodingIntID,
+			expect:      articleABody,
+			expectError: nil,
+		}, {
+			description: "[]*ArticleEncodinfIntID (encoding.TextMarshaler)",
+			given:       &articlesEncodingIntIDABPtr,
+			expect:      articlesABBody,
+			expectError: nil,
+		}, {
 			description: "non-string id",
 			given: &struct {
 				ID int `jsonapi:"primary,test"`

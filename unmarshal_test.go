@@ -120,6 +120,26 @@ func TestUnmarshal(t *testing.T) {
 			expect:      []*ArticleIntIDID{&articleAIntIDID, &articleBIntIDID},
 			expectError: nil,
 		}, {
+			description: "*ArticleEncodingIntID",
+			given:       articleABody,
+			do: func(body []byte) (any, error) {
+				var a ArticleEncodingIntID
+				err := Unmarshal(body, &a)
+				return &a, err
+			},
+			expect:      &articleAEncodingIntID,
+			expectError: nil,
+		}, {
+			description: "[]*ArticleEncodingIntID",
+			given:       articlesABBody,
+			do: func(body []byte) (any, error) {
+				var a []*ArticleEncodingIntID
+				err := Unmarshal(body, &a)
+				return a, err
+			},
+			expect:      []*ArticleEncodingIntID{&articleAEncodingIntID, &articleBEncodingIntID},
+			expectError: nil,
+		}, {
 			description: "*ArticleWithMeta",
 			given:       articleAWithMetaBody,
 			do: func(body []byte) (any, error) {

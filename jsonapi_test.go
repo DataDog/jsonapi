@@ -1,6 +1,7 @@
 package jsonapi
 
 import (
+	"encoding"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -54,6 +55,9 @@ var (
 	articleAIntIDID                              = ArticleIntIDID{ID: IntID(1), Title: "A"}
 	articleBIntIDID                              = ArticleIntIDID{ID: IntID(2), Title: "B"}
 	articlesIntIDIDABPtr                         = []*ArticleIntIDID{&articleAIntIDID, &articleBIntIDID}
+	articleAEncodingIntID                        = ArticleEncodingIntID{ID: EncodingIntID(1), Title: "A"}
+	articleBEncodingIntID                        = ArticleEncodingIntID{ID: EncodingIntID(2), Title: "B"}
+	articlesEncodingIntIDABPtr                   = []*ArticleEncodingIntID{&articleAEncodingIntID, &articleBEncodingIntID}
 	articleEmbedded                              = ArticleEmbedded{ID: "1", Title: "A", Metadata: Metadata{LastModified: time.Date(1989, 06, 15, 0, 0, 0, 0, time.UTC)}}
 	articleEmbeddedPointer                       = ArticleEmbeddedPointer{ID: "1", Title: "A", Metadata: &Metadata{LastModified: time.Date(1989, 06, 15, 0, 0, 0, 0, time.UTC)}}
 
@@ -310,6 +314,32 @@ func (a *ArticleIntIDID) UnmarshalID(id string) error {
 	}
 	a.ID = IntID(v)
 	return nil
+}
+
+var (
+	// ensure EncodingIntID implements encoding.[TextMarshaler|TextUnmarshaler]
+	_ encoding.TextMarshaler   = (*EncodingIntID)(nil)
+	_ encoding.TextUnmarshaler = (*EncodingIntID)(nil)
+)
+
+type EncodingIntID int
+
+func (i EncodingIntID) MarshalText() ([]byte, error) {
+	return []byte(fmt.Sprintf("%d", i)), nil
+}
+
+func (i *EncodingIntID) UnmarshalText(text []byte) error {
+	v, err := strconv.Atoi(string(text))
+	if err != nil {
+		return err
+	}
+	*i = EncodingIntID(v)
+	return nil
+}
+
+type ArticleEncodingIntID struct {
+	ID    EncodingIntID `jsonapi:"primary,articles"`
+	Title string        `jsonapi:"attribute" json:"title"`
 }
 
 type ArticleWithResourceObjectMeta struct {
