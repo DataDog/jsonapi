@@ -32,6 +32,7 @@ func parseDirective(v string) (directive, bool) {
 type tag struct {
 	directive    directive
 	resourceType string // only valid for primary
+	omitEmpty    bool
 }
 
 func parseJSONTag(f reflect.StructField) (string, bool, bool) {
@@ -56,7 +57,13 @@ func parseJSONAPITag(f reflect.StructField) (*tag, error) {
 	t := f.Tag.Get("jsonapi")
 	ts := strings.Split(t, ",")
 
+	var omitEmpty bool
 	switch len(ts) {
+	case 3:
+		if ts[2] == "omitempty" {
+			omitEmpty = true
+			break // good
+		}
 	case 2:
 		break // good
 	case 1:
@@ -68,7 +75,7 @@ func parseJSONAPITag(f reflect.StructField) (*tag, error) {
 		return nil, &TagError{
 			TagName: "jsonapi",
 			Field:   f.Name,
-			Reason:  "expected format {directive},{optional:type}",
+			Reason:  "expected format {directive},{optional:type},{optional:omitempty}",
 		}
 	}
 
@@ -77,9 +84,9 @@ func parseJSONAPITag(f reflect.StructField) (*tag, error) {
 		return nil, &TagError{TagName: "jsonapi", Field: f.Name, Reason: "invalid directive"}
 	}
 
-	tag := &tag{directive: d}
+	tag := &tag{directive: d, omitEmpty: omitEmpty}
 	if d == primary {
-		if len(ts) != 2 {
+		if len(ts) < 2 {
 			return nil, &TagError{
 				TagName: "jsonapi",
 				Field:   f.Name,

@@ -218,6 +218,12 @@ func (ro *resourceObject) unmarshalFields(v any, m *Unmarshaler) error {
 				// type names count as member names
 				return &MemberNameValidationError{ro.Type}
 			}
+
+			// if omitempty is allowed, skip if this is an empty id
+			if jsonapiTag.omitEmpty && ro.ID == "" {
+				continue
+			}
+
 			// to unmarshal the id we follow these rules
 			//     1. Use UnmarshalIdentifier if it is implemented
 			//     2. Use encoding.TextUnmarshaler if it is implemented

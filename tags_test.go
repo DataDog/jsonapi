@@ -103,6 +103,12 @@ func TestParseJSONAPITag(t *testing.T) {
 			}{},
 			expect: &tag{directive: primary, resourceType: "foo"},
 		}, {
+			description: "valid jsonapi, primary, omitempty",
+			given: struct {
+				Foo string `jsonapi:"primary,foo,omitempty"`
+			}{},
+			expect: &tag{directive: primary, resourceType: "foo", omitEmpty: true},
+		}, {
 			description: "no struct tags",
 			given:       struct{ Foo string }{},
 			expect:      nil,
