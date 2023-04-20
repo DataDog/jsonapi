@@ -1,6 +1,7 @@
 package jsonapi
 
 import (
+	"encoding"
 	"encoding/json"
 	"reflect"
 )
@@ -219,8 +220,9 @@ func (ro *resourceObject) unmarshalFields(v any, m *Unmarshaler) error {
 			}
 			// to unmarshal the id we follow these rules
 			//     1. Use UnmarshalIdentifier if it is implemented
-			//     2. Use the value directly if it is a string
-			//     3. Fail
+			//     2. Use encoding.TextUnmarshaler if it is implemented
+			//     3. Use the value directly if it is a string
+			//     4. Fail
 			if vu, ok := v.(UnmarshalIdentifier); ok {
 				if err := vu.UnmarshalID(ro.ID); err != nil {
 					return err
@@ -228,6 +230,24 @@ func (ro *resourceObject) unmarshalFields(v any, m *Unmarshaler) error {
 				setPrimary = true
 				continue
 			}
+
+			// get the underlying fields interface
+			var fvi any
+			switch fv.CanAddr() {
+			case true:
+				fvi = fv.Addr().Interface()
+			default:
+				fvi = fv.Interface()
+			}
+
+			if fviu, ok := fvi.(encoding.TextUnmarshaler); ok {
+				if err := fviu.UnmarshalText([]byte(ro.ID)); err != nil {
+					return err
+				}
+				setPrimary = true
+				continue
+			}
+
 			if fv.Kind() == reflect.String {
 				fv.SetString(ro.ID)
 				setPrimary = true

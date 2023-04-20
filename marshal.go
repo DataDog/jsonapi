@@ -1,6 +1,7 @@
 package jsonapi
 
 import (
+	"encoding"
 	"encoding/json"
 	"fmt"
 	"net/url"
@@ -365,7 +366,8 @@ func makeResourceObject(v any, vt reflect.Type, m *Marshaler, isRelationship boo
 			//     1. Use MarshalIdentifier if it is implemented
 			//     2. Use the value directly if it is a string
 			//     3. Use fmt.Stringer if it is implemented
-			//     4. Fail
+			//     4. Use encoding.TextMarshaler if it is implemented
+			//     5. Fail
 
 			if vm, ok := v.(MarshalIdentifier); ok {
 				ro.ID = vm.MarshalID()
@@ -383,6 +385,16 @@ func makeResourceObject(v any, vt reflect.Type, m *Marshaler, isRelationship boo
 
 			if _, ok := fv.(fmt.Stringer); ok {
 				ro.ID = fmt.Sprintf("%s", fv)
+				foundPrimary = true
+				continue
+			}
+
+			if fvm, ok := fv.(encoding.TextMarshaler); ok {
+				vb, err := fvm.MarshalText()
+				if err != nil {
+					return nil, err
+				}
+				ro.ID = string(vb)
 				foundPrimary = true
 				continue
 			}

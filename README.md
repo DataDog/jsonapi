@@ -100,11 +100,37 @@ Both [jsonapi.Marshal](https://pkg.go.dev/github.com/DataDog/jsonapi#Marshal) an
 
 [Identification](https://jsonapi.org/format/1.0/#document-resource-object-identification) MUST be represented as a `string` regardless of the actual type in Go. To support non-string types for the primary field you can implement optional interfaces.
 
+You can implement the following on the parent types (that contain non-string fields):
+
+| Context | Interface |
+| --- | --- |
+| Marshal | [jsonapi.MarshalIdentifier](https://pkg.go.dev/github.com/DataDog/jsonapi#MarshalIdentifier) |
+| Unmarshal | [jsonapi.UnmarshalIdentifier](https://pkg.go.dev/github.com/DataDog/jsonapi#UnmarshalIdentifier) |
+
+You can implement the following on the field types themselves if they are not already implemented.
+
 | Context | Interface |
 | --- | --- |
 | Marshal | [fmt.Stringer](https://pkg.go.dev/fmt#Stringer) |
-| Marshal | [jsonapi.MarshalIdentifier](https://pkg.go.dev/github.com/DataDog/jsonapi#MarshalIdentifier) |
-| Unmarshal | [jsonapi.UnmarshalIdentifier](https://pkg.go.dev/github.com/DataDog/jsonapi#UnmarshalIdentifier) |
+| Marshal | [encoding.TextMarshaler](https://pkg.go.dev/encoding#TextMarshaler) |
+| Unmarshal | [encoding.TextUnmarshaler](https://pkg.go.dev/encoding#TextUnmarshaler) |
+
+### Order of Operations
+
+#### Marshaling
+
+1. Use MarshalIdentifier if it is implemented on the parent type
+2. Use the value directly if it is a string
+3. Use fmt.Stringer if it is implemented
+4. Use encoding.TextMarshaler if it is implemented
+5. Fail
+
+#### Unmarshaling
+
+1. Use UnmarshalIdentifier if it is implemented on the parent type
+2. Use encoding.TextUnmarshaler if it is implemented
+3. Use the value directly if it is a string
+4. Fail
 
 ## Links
 
