@@ -82,7 +82,7 @@ Like [encoding/json](https://pkg.go.dev/encoding/json) jsonapi is primarily cont
 
 | Tag | Usage | Description | Alias |
 | --- | --- | --- | --- |
-| primary | `jsonapi:"primary,{type}"` | Defines the [identification](https://jsonapi.org/format/1.0/#document-resource-object-identification) field. | N/A |
+| primary | `jsonapi:"primary,{type},{omitempty}"` | Defines the [identification](https://jsonapi.org/format/1.0/#document-resource-object-identification) field. Including omitempty allows for empty IDs (used for server-side id generation) | N/A |
 | attribute | `jsonapi:"attribute"` | Defines an [attribute](https://jsonapi.org/format/1.0/#document-resource-object-attributes). | attr |
 | relationship | `jsonapi:"relationship"` | Defines a [relationship](https://jsonapi.org/format/1.0/#document-resource-object-relationships). | rel |
 | meta | `jsonapi:"meta"` | Defines a [meta object](https://jsonapi.org/format/1.0/#document-meta). | N/A |
