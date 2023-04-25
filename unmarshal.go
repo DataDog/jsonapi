@@ -94,7 +94,7 @@ func Unmarshal(data []byte, v any, opts ...UnmarshalOption) (err error) {
 func (d *document) unmarshal(v any, m *Unmarshaler) (err error) {
 	// this means we couldn't decode anything (e.g. {}, [], ...)
 	if d.isEmpty() {
-		//err = &RequestBodyError{t: v}
+		err = &RequestBodyError{t: v}
 		return
 	}
 
