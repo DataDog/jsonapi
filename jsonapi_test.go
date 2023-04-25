@@ -94,7 +94,8 @@ var (
 	}
 
 	// article bodies
-	emptyBody                         = `{"data":[]}`
+	emptySingleBody                   = `{"data":{}}`
+	emptyManyBody                     = `{"data":[]}`
 	articleABody                      = `{"data":{"type":"articles","id":"1","attributes":{"title":"A"}}}`
 	articleANoIDBody                  = `{"data":{"type":"articles","attributes":{"title":"A"}}}`
 	articleAInvalidTypeBody           = `{"data":{"type":"not-articles","id":"1","attributes":{"title":"A"}}}`

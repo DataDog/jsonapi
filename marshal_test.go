@@ -39,7 +39,7 @@ func TestMarshal(t *testing.T) {
 		}, {
 			description: "[]*Article (empty)",
 			given:       make([]*Article, 0),
-			expect:      emptyBody,
+			expect:      emptyManyBody,
 			expectError: nil,
 		}, {
 			description: "Article (missing ID)",
