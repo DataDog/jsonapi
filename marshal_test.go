@@ -24,12 +24,12 @@ func TestMarshal(t *testing.T) {
 		{
 			description: "nil",
 			given:       nil,
-			expect:      `{"data":null}`,
+			expect:      nullDataBody,
 			expectError: nil,
 		}, {
 			description: "Article (empty)",
 			given:       Article{},
-			expect:      `{"data":null}`,
+			expect:      nullDataBody,
 			expectError: nil,
 		}, {
 			description: "*Article (empty)",

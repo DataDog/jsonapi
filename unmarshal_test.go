@@ -100,6 +100,36 @@ func TestUnmarshal(t *testing.T) {
 			expect:      Article{},
 			expectError: nil,
 		}, {
+			description: "*Article (empty)",
+			given:       emptySingleBody,
+			do: func(body []byte) (any, error) {
+				var a *Article
+				err := Unmarshal(body, &a)
+				return a, err
+			},
+			expect:      &Article{},
+			expectError: nil,
+		}, {
+			description: "Article null data",
+			given:       nullDataBody,
+			do: func(body []byte) (any, error) {
+				var a Article
+				err := Unmarshal(body, &a)
+				return a, err
+			},
+			expect:      Article{},
+			expectError: nil,
+		}, {
+			description: "*Article null data",
+			given:       nullDataBody,
+			do: func(body []byte) (any, error) {
+				var a Article
+				err := Unmarshal(body, &a)
+				return a, err
+			},
+			expect:      &Article{},
+			expectError: nil,
+		}, {
 			description: "[]*Article",
 			given:       articlesABBody,
 			do: func(body []byte) (any, error) {

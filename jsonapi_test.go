@@ -94,6 +94,7 @@ var (
 	}
 
 	// article bodies
+	nullDataBody                      = `{"data":null}`
 	emptySingleBody                   = `{"data":{}}`
 	emptyManyBody                     = `{"data":[]}`
 	articleABody                      = `{"data":{"type":"articles","id":"1","attributes":{"title":"A"}}}`
