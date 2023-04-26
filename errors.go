@@ -26,18 +26,12 @@ var (
 
 	// ErrMissingLinkFields indicates that a LinkObject is not valid.
 	ErrMissingLinkFields = errors.New("at least one of Links.Self or Links.Related must be set to a nonempty string or *LinkObject")
+
+	// ErrInvalidEmptyPrimaryData indicates that a document is invalid because of how empty primary data is represented.
+	//
+	// Empty primary data may not be represented as an empty JSON document {}, or empty data object {"data":{}}.
+	ErrInvalidEmptyPrimaryData = errors.New("documents without primary data cannot be represented with empty JSON objects")
 )
-
-// RequestBodyError indicates that a given request body is invalid.
-// TODO: should this replace ErrInvalidBody?
-type RequestBodyError struct {
-	t any
-}
-
-// Error implements the error interface.
-func (e *RequestBodyError) Error() string {
-	return fmt.Sprintf("body is not a json:api representation of %T", e.t)
-}
 
 // TypeError indicates that an unexpected type was encountered.
 type TypeError struct {

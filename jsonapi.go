@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"strings"
 )
 
 // ResourceObject is a JSON:API resource object as defined by https://jsonapi.org/format/1.0/#document-resource-objects
@@ -163,6 +164,20 @@ func (d *document) MarshalJSON() ([]byte, error) {
 // UnmarshalJSON implements the json.Unmarshaler interface.
 func (d *document) UnmarshalJSON(data []byte) (err error) {
 	type alias document
+
+	// Handle empty document cases separately.
+	// Requirements for primary data are found in https://jsonapi.org/format/#document-top-level
+	// TODO(#26): verify whether this catches recursive sub-document cases.
+	switch strings.ReplaceAll(string(data), "\t\n\r ", "") {
+	case "{}", `{"data":{}}`:
+		err = ErrInvalidEmptyPrimaryData
+		return
+	case `{"data":null}`:
+		return
+	case `{"data":[]}`:
+		d.hasMany = true
+		return
+	}
 
 	// Since there is no simple regular expression to capture only that the primary data is an
 	// array, try unmarshaling both ways

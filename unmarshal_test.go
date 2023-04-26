@@ -98,7 +98,7 @@ func TestUnmarshal(t *testing.T) {
 				return a, err
 			},
 			expect:      Article{},
-			expectError: nil,
+			expectError: ErrInvalidEmptyPrimaryData,
 		}, {
 			description: "*Article (empty)",
 			given:       emptySingleBody,
@@ -107,8 +107,8 @@ func TestUnmarshal(t *testing.T) {
 				err := Unmarshal(body, &a)
 				return a, err
 			},
-			expect:      &Article{},
-			expectError: nil,
+			expect:      (*Article)(nil),
+			expectError: ErrInvalidEmptyPrimaryData,
 		}, {
 			description: "Article null data",
 			given:       nullDataBody,
@@ -125,7 +125,7 @@ func TestUnmarshal(t *testing.T) {
 			do: func(body []byte) (any, error) {
 				var a Article
 				err := Unmarshal(body, &a)
-				return a, err
+				return &a, err
 			},
 			expect:      &Article{},
 			expectError: nil,
@@ -257,7 +257,7 @@ func TestUnmarshal(t *testing.T) {
 				return &a, err
 			},
 			expect:      new(Article),
-			expectError: &RequestBodyError{t: new(Article)},
+			expectError: ErrInvalidEmptyPrimaryData,
 		}, {
 			description: "*Article (invalid type)",
 			given:       articleAInvalidTypeBody,
@@ -375,6 +375,9 @@ func TestUnmarshal(t *testing.T) {
 			expect:      &articleRelatedCommentsNested,
 			expectError: nil,
 		},
+		// TODO(#26):
+		// - must test relationship sub-documents are allowed to be null or [], but not {}
+		// - must test that {"data":null,"meta":...} and {"data":[],"meta":...} work
 	}
 
 	for i, tc := range tests {
