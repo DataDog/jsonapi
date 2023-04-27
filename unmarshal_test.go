@@ -98,7 +98,7 @@ func TestUnmarshal(t *testing.T) {
 				return a, err
 			},
 			expect:      Article{},
-			expectError: ErrInvalidEmptyPrimaryData,
+			expectError: ErrInvalidDataField,
 		}, {
 			description: "*Article (empty)",
 			given:       emptySingleBody,
@@ -108,7 +108,7 @@ func TestUnmarshal(t *testing.T) {
 				return a, err
 			},
 			expect:      (*Article)(nil),
-			expectError: ErrInvalidEmptyPrimaryData,
+			expectError: ErrInvalidDataField,
 		}, {
 			description: "Article null data",
 			given:       nullDataBody,
@@ -257,7 +257,7 @@ func TestUnmarshal(t *testing.T) {
 				return &a, err
 			},
 			expect:      new(Article),
-			expectError: ErrInvalidEmptyPrimaryData,
+			expectError: ErrMissingDataField,
 		}, {
 			description: "*Article (invalid type)",
 			given:       articleAInvalidTypeBody,
@@ -288,6 +288,16 @@ func TestUnmarshal(t *testing.T) {
 			},
 			expect:      new(Article),
 			expectError: &PartialLinkageError{[]string{"{Type: author, ID: 1}"}},
+		}, {
+			description: "*ArticleRelated empty relationships (invalid)",
+			given:       articleRelatedInvalidEmptyRelationshipBody,
+			do: func(body []byte) (any, error) {
+				var a ArticleRelated
+				err := Unmarshal(body, &a)
+				return &a, err
+			},
+			expect:      &ArticleRelated{},
+			expectError: ErrMissingDataField,
 		}, {
 			// this test verifies that empty relationship bodies (null and []) unmarshal
 			description: "*ArticleRelated empty relationships",
@@ -375,9 +385,6 @@ func TestUnmarshal(t *testing.T) {
 			expect:      &articleRelatedCommentsNested,
 			expectError: nil,
 		},
-		// TODO(#26):
-		// - must test relationship sub-documents are allowed to be null or [], but not {}
-		// - must test that {"data":null,"meta":...} and {"data":[],"meta":...} work
 	}
 
 	for i, tc := range tests {
@@ -404,6 +411,8 @@ func TestUnmarshalMeta(t *testing.T) {
 	articleAMetaBody := `{"data":{"id":"1","type":"articles","attributes":{"title":"A"}},"meta":{"foo":"bar"}}`
 	articlesABMetaBody := `{"data":[{"type":"articles","id":"1","attributes":{"title":"A"}},{"type":"articles","id":"2","attributes":{"title":"B"}}],"meta":{"foo":"bar"}}`
 	articleAInvalidMetaBody := `{"data":{"id":"1","type":"articles"},"meta":"foo"}`
+	articleNullWithMetaBody := `{"data":null,"meta":{"foo":"bar"}}`
+	articleEmptyArrayWithMetaBody := `{"data":[],"meta":{"foo":"bar"}}`
 
 	type meta struct {
 		Foo string `json:"foo"`
@@ -475,6 +484,30 @@ func TestUnmarshalMeta(t *testing.T) {
 			},
 			expect:      nil,
 			expectError: &json.InvalidUnmarshalError{Type: reflect.TypeOf("")},
+		}, {
+			description: "meta (empty Article)",
+			do: func() (any, error) {
+				var (
+					a Article
+					m meta
+				)
+				err := Unmarshal([]byte(articleNullWithMetaBody), &a, UnmarshalMeta(&m))
+				return &m, err
+			},
+			expect:      &meta{Foo: "bar"},
+			expectError: nil,
+		}, {
+			description: "meta (empty []*Article)",
+			do: func() (any, error) {
+				var (
+					a []*Article
+					m meta
+				)
+				err := Unmarshal([]byte(articleEmptyArrayWithMetaBody), &a, UnmarshalMeta(&m))
+				return &m, err
+			},
+			expect:      &meta{Foo: "bar"},
+			expectError: nil,
 		},
 	}
 

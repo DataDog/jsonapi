@@ -27,10 +27,11 @@ var (
 	// ErrMissingLinkFields indicates that a LinkObject is not valid.
 	ErrMissingLinkFields = errors.New("at least one of Links.Self or Links.Related must be set to a nonempty string or *LinkObject")
 
-	// ErrInvalidEmptyPrimaryData indicates that a document is invalid because of how empty primary data is represented.
-	//
-	// Empty primary data may not be represented as an empty JSON document {}, or empty data object {"data":{}}.
-	ErrInvalidEmptyPrimaryData = errors.New("documents without primary data cannot be represented with empty JSON objects")
+	// ErrMissingDataField indicates that a *jsonapi.document is missing data in an invalid way
+	ErrMissingDataField = errors.New("document is missing a required top-level or relationship-level data member")
+
+	// ErrInvalidDataField indicates that a data field for primary data or relationship resource linkage is an empty object {}
+	ErrInvalidDataField = errors.New("data fields cannot be represented as an empty object")
 )
 
 // TypeError indicates that an unexpected type was encountered.
