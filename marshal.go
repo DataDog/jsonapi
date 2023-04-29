@@ -165,45 +165,47 @@ func makeDocument(v any, m *Marshaler, isRelationship bool) (*document, error) {
 
 	// at this point we have no errors, so lets make the document
 	d = newDocument()
-	if v == nil {
-		// if v is nil we want `{"data":null}` so return the empty document
-	} else if reflect.ValueOf(v).IsZero() {
-		if reflect.TypeOf(v).Kind() == reflect.Slice {
-			// if v is an empty slice we want `{"data":[]}`
-			d.hasMany = true
-		}
-	} else {
-		// the given "v" is the resource object (or a slice of them)
-		//
-		// only a struct or slice of struct are valid here because we'll be parsing
-		// the jsonapi struct tags from the struct to make the resource object
 
-		vt := reflect.TypeOf(v)
-		switch derefType(vt).Kind() {
-		case reflect.Slice:
-			// if we get a slice we make a resource object for each item
-			d.hasMany = true
-			rv := derefValue(reflect.ValueOf(v))
-			for i := 0; i < rv.Len(); i++ {
-				iv := rv.Index(i).Interface()
-				ro, err := makeResourceObject(iv, reflect.TypeOf(iv), m, isRelationship)
-				if err != nil {
-					return nil, err
-				}
-				if ro != nil {
-					d.DataMany = append(d.DataMany, ro)
-				}
-			}
-		case reflect.Struct:
-			// if we get a struct we just make a single resource object
-			ro, err := makeResourceObject(v, vt, m, isRelationship)
+	// the given "v" is the resource object (or a slice of them)
+	//
+	// besides nil, only a struct or slice of struct are valid here because
+	// we'll be parsing the jsonapi struct tags from the struct to make the
+	// resource object
+	vt := reflect.TypeOf(v)
+	switch {
+	case vt == nil:
+		// if v is nil we want `{"data":null}` so continue with an empty document
+		break
+	case derefType(vt).Kind() == reflect.Slice:
+		// if we get a slice we make a resource object for each item
+		d.hasMany = true
+		// if v is an empty slice we want `{"data":[]}`
+		if reflect.ValueOf(v).IsZero() {
+			break
+		}
+		rv := derefValue(reflect.ValueOf(v))
+		for i := 0; i < rv.Len(); i++ {
+			iv := rv.Index(i).Interface()
+			ro, err := makeResourceObject(iv, reflect.TypeOf(iv), m, isRelationship)
 			if err != nil {
 				return nil, err
 			}
-			d.DataOne = ro
-		default:
-			return nil, &TypeError{Actual: fmt.Sprintf("%T", v), Expected: []string{"struct", "slice"}}
+			if ro != nil {
+				d.DataMany = append(d.DataMany, ro)
+			}
 		}
+	case derefType(vt).Kind() == reflect.Struct:
+		if reflect.ValueOf(v).IsZero() {
+			break
+		}
+		// if we get a struct we just make a single resource object
+		ro, err := makeResourceObject(v, vt, m, isRelationship)
+		if err != nil {
+			return nil, err
+		}
+		d.DataOne = ro
+	default:
+		return nil, &TypeError{Actual: fmt.Sprintf("%T", v), Expected: []string{"struct", "slice"}}
 	}
 
 	// if we got any included data, build the resource object/s and include them
