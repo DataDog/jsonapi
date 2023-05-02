@@ -141,7 +141,7 @@ func (e *Error) UnmarshalJSON(data []byte) error {
 
 	aux := &struct {
 		*alias
-		StatusStr string `json:"status"`
+		Status string `json:"status"`
 	}{
 		alias: (*alias)(e),
 	}
@@ -150,8 +150,8 @@ func (e *Error) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	if aux.StatusStr != "" {
-		status, err := strconv.Atoi(aux.StatusStr)
+	if aux.Status != "" {
+		status, err := strconv.Atoi(aux.Status)
 		if err != nil {
 			return err
 		}
