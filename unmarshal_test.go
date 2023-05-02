@@ -384,6 +384,16 @@ func TestUnmarshal(t *testing.T) {
 			},
 			expect:      &articleRelatedCommentsNested,
 			expectError: nil,
+		}, {
+			description: "links member only",
+			given:       `{"links":null}`,
+			do: func(body []byte) (any, error) {
+				var a Article
+				err := Unmarshal(body, &a)
+				return &a, err
+			},
+			expect:      &Article{},
+			expectError: ErrMissingDataField,
 		},
 	}
 
