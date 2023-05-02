@@ -39,7 +39,7 @@ func TestMarshal(t *testing.T) {
 		}, {
 			description: "[]*Article (nil)",
 			given:       []*Article(nil),
-			expect:      emptyBody,
+			expect:      emptyManyBody,
 			expectError: nil,
 		}, {
 			description: "[]*Article (empty)",
@@ -300,8 +300,6 @@ func TestMarshalMeta(t *testing.T) {
 	t.Parallel()
 
 	articleAMetaBody := `{"data":{"id":"1","type":"articles","attributes":{"title":"A"}},"meta":{"foo":"bar"}}`
-	articleAMetaNullBody := `{"data": null,"meta":{"foo":"bar"}}`
-	articleAMetaEmptyBody := `{"data":[],"meta":{"foo":"bar"}}`
 	errorsObjectMetaBody := `{"meta":{"foo":"bar"},"errors":[{"title":"T"}]}`
 
 	tests := []struct {
@@ -341,19 +339,19 @@ func TestMarshalMeta(t *testing.T) {
 			description: "map[string]any with nil body",
 			given:       nil,
 			givenMeta:   map[string]any{"foo": "bar"},
-			expect:      articleAMetaNullBody,
+			expect:      articleNullWithMetaBody,
 			expectError: nil,
 		}, {
 			description: "map[string]any with Article (empty)",
 			given:       Article{},
 			givenMeta:   map[string]any{"foo": "bar"},
-			expect:      articleAMetaNullBody,
+			expect:      articleNullWithMetaBody,
 			expectError: nil,
 		}, {
 			description: "map[string]any with body []*Article (empty)",
 			given:       []*Article(nil),
 			givenMeta:   map[string]any{"foo": "bar"},
-			expect:      articleAMetaEmptyBody,
+			expect:      articleEmptyArrayWithMetaBody,
 			expectError: nil,
 		},
 	}

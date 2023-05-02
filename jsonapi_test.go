@@ -108,6 +108,8 @@ var (
 	articleLinkedOnlySelfBody         = `{"data":{"id":"1","type":"articles","links":{"self":"https://example.com/articles/1"}}}`
 	articleWithResourceObjectMetaBody = `{"data":{"type":"articles","id":"1","attributes":{"title":"A"},"meta":{"count":10}}}`
 	articleAWithMetaBody              = `{"data":{"id":"1","type":"articles","attributes":{"title":"A"},"meta":{"views":10,"reads":4}}}`
+	articleNullWithMetaBody           = `{"data":null,"meta":{"foo":"bar"}}`
+	articleEmptyArrayWithMetaBody     = `{"data":[],"meta":{"foo":"bar"}}`
 	articleEmbeddedBody               = `{"data":{"type":"articles","id":"1","attributes":{"title":"A","lastModified":"1989-06-15T00:00:00Z"}}}`
 
 	// articles with relationships bodies

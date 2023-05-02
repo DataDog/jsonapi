@@ -411,8 +411,6 @@ func TestUnmarshalMeta(t *testing.T) {
 	articleAMetaBody := `{"data":{"id":"1","type":"articles","attributes":{"title":"A"}},"meta":{"foo":"bar"}}`
 	articlesABMetaBody := `{"data":[{"type":"articles","id":"1","attributes":{"title":"A"}},{"type":"articles","id":"2","attributes":{"title":"B"}}],"meta":{"foo":"bar"}}`
 	articleAInvalidMetaBody := `{"data":{"id":"1","type":"articles"},"meta":"foo"}`
-	articleNullWithMetaBody := `{"data":null,"meta":{"foo":"bar"}}`
-	articleEmptyArrayWithMetaBody := `{"data":[],"meta":{"foo":"bar"}}`
 
 	type meta struct {
 		Foo string `json:"foo"`
