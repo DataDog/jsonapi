@@ -160,61 +160,27 @@ func (d *document) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func (d *document) tryUnmarshalEmpty(data []byte) (err error) {
-	var m map[string]any
-
-	if err = json.Unmarshal(data, &m); err != nil {
-		return
-	}
-	if len(m) == 0 {
-		// {} - NOT OK
-		err = ErrMissingDataField
-		return
-	}
-
-	ros, ok := m["data"]
-	if !ok {
-		// e.g. {"meta":{...}} - OK
-		return
-	}
-
-	switch ros := ros.(type) {
-	case nil:
-		// {"data":null} - OK
-	case map[string]any:
-		// {"data":{...}} - OK
-		if len(ros) == 0 {
-			// {"data":{}} - NOT OK
-			err = ErrInvalidDataField
-		}
-	case []any:
-		// {"data":[...]} - OK
-		d.hasMany = true
-	}
-
-	return
-}
-
 // UnmarshalJSON implements the json.Unmarshaler interface.
 func (d *document) UnmarshalJSON(data []byte) (err error) {
 	type alias document
 
-	err = d.tryUnmarshalEmpty(data)
-	if err != nil {
-		return
+	if string(data) == "{}" {
+		// TODO: This check does not account for documents which are missing all required top-level
+		// members but do have optional ones. Such documents should also fail unmarshaling.
+		return ErrMissingDataField
 	}
 
-	if d.hasMany {
-		auxMany := &struct {
-			Data []*resourceObject `json:"data"`
-			*alias
-		}{
-			alias: (*alias)(d),
-		}
-		if err = json.Unmarshal(data, &auxMany); err == nil {
-			d.DataMany = auxMany.Data
-			return
-		}
+	auxMany := &struct {
+		Data []*resourceObject `json:"data"`
+		*alias
+	}{
+		alias: (*alias)(d),
+	}
+	if err = json.Unmarshal(data, &auxMany); err == nil && auxMany.Data != nil {
+		// if Data is nil the below is skipped as {"data":null} is a single null resource
+		d.hasMany = true
+		d.DataMany = auxMany.Data
+		return
 	}
 
 	auxOne := &struct {

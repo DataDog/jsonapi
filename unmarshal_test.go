@@ -98,7 +98,7 @@ func TestUnmarshal(t *testing.T) {
 				return a, err
 			},
 			expect:      Article{},
-			expectError: ErrInvalidDataField,
+			expectError: &TypeError{Actual: "", Expected: []string{"articles"}},
 		}, {
 			description: "*Article (empty)",
 			given:       emptySingleBody,
@@ -107,8 +107,8 @@ func TestUnmarshal(t *testing.T) {
 				err := Unmarshal(body, &a)
 				return a, err
 			},
-			expect:      (*Article)(nil),
-			expectError: ErrInvalidDataField,
+			expect:      &Article{},
+			expectError: &TypeError{Actual: "", Expected: []string{"articles"}},
 		}, {
 			description: "Article null data",
 			given:       nullDataBody,
