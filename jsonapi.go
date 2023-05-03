@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"strings"
 )
 
 // ResourceObject is a JSON:API resource object as defined by https://jsonapi.org/format/1.0/#document-resource-objects
@@ -161,39 +162,41 @@ func (d *document) MarshalJSON() ([]byte, error) {
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface.
-func (d *document) UnmarshalJSON(data []byte) (err error) {
+func (d *document) UnmarshalJSON(data []byte) error {
 	type alias document
 
-	if string(data) == "{}" {
-		// TODO: This check does not account for documents which are missing all required top-level
-		// members but do have optional ones. Such documents should also fail unmarshaling.
-		return ErrMissingDataField
-	}
-
-	auxMany := &struct {
-		Data []*resourceObject `json:"data"`
+	auxRaw := &struct {
+		Data json.RawMessage `json:"data,omitempty"`
 		*alias
 	}{
 		alias: (*alias)(d),
 	}
-	if err = json.Unmarshal(data, &auxMany); err == nil && auxMany.Data != nil {
-		// if Data is nil the below is skipped as {"data":null} is a single null resource
+	if err := json.Unmarshal(data, &auxRaw); err != nil {
+		return err
+	}
+
+	rawData := string(auxRaw.Data)
+	switch rawData {
+	case "":
+		// no "data" member
+		if auxRaw.Errors == nil && auxRaw.Meta == nil {
+			// missing required top-level fields
+			return ErrMissingDataField
+		}
+		return nil
+	case "{}":
+		// {"data":{}, ...} is invalid
+		return ErrEmptyDataObject
+	case "null":
+		// {"data":null, ...} is valid
+		return nil
+	}
+
+	if strings.HasPrefix(rawData, "[") {
 		d.hasMany = true
-		d.DataMany = auxMany.Data
-		return
+		return json.Unmarshal(auxRaw.Data, &auxRaw.DataMany)
 	}
-
-	auxOne := &struct {
-		Data *resourceObject `json:"data"`
-		*alias
-	}{
-		alias: (*alias)(d),
-	}
-	if err = json.Unmarshal(data, &auxOne); err == nil {
-		d.DataOne = auxOne.Data
-	}
-
-	return
+	return json.Unmarshal(auxRaw.Data, &auxRaw.DataOne)
 }
 
 // isEmpty returns true if there is no primary data in the given document (i.e. null or []).

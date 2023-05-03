@@ -29,6 +29,9 @@ var (
 
 	// ErrMissingDataField indicates that a *jsonapi.document is missing data in an invalid way
 	ErrMissingDataField = errors.New("document is missing a required top-level or relationship-level data member")
+
+	// ErrEmptyDataObject indicates that a primary or relationship data member is incorrectly represented by an empty JSON object {}
+	ErrEmptyDataObject = errors.New("resource \"data\" members may not be represented by an empty object {}")
 )
 
 // TypeError indicates that an unexpected type was encountered.

@@ -98,7 +98,7 @@ func TestUnmarshal(t *testing.T) {
 				return a, err
 			},
 			expect:      Article{},
-			expectError: &TypeError{Actual: "", Expected: []string{"articles"}},
+			expectError: ErrEmptyDataObject,
 		}, {
 			description: "*Article (empty)",
 			given:       emptySingleBody,
@@ -107,8 +107,8 @@ func TestUnmarshal(t *testing.T) {
 				err := Unmarshal(body, &a)
 				return a, err
 			},
-			expect:      &Article{},
-			expectError: &TypeError{Actual: "", Expected: []string{"articles"}},
+			expect:      (*Article)(nil),
+			expectError: ErrEmptyDataObject,
 		}, {
 			description: "Article null data",
 			given:       nullDataBody,
