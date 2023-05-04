@@ -338,9 +338,8 @@ func TestUnmarshal(t *testing.T) {
 func TestUnmarshalMeta(t *testing.T) {
 	t.Parallel()
 
-	articleAMetaBody := `{"data":{"id":"1","type":"articles","attributes":{"title":"A"}},"meta":{"foo":"bar"}}`
-	articlesABMetaBody := `{"data":[{"type":"articles","id":"1","attributes":{"title":"A"}},{"type":"articles","id":"2","attributes":{"title":"B"}}],"meta":{"foo":"bar"}}`
-	articleAInvalidMetaBody := `{"data":{"id":"1","type":"articles"},"meta":"foo"}`
+	articlesABToplevelMetaBody := `{"data":[{"type":"articles","id":"1","attributes":{"title":"A"}},{"type":"articles","id":"2","attributes":{"title":"B"}}],"meta":{"foo":"bar"}}`
+	articleAInvalidToplevelMetaBody := `{"data":{"id":"1","type":"articles"},"meta":"foo"}`
 
 	type meta struct {
 		Foo string `json:"foo"`
@@ -359,7 +358,7 @@ func TestUnmarshalMeta(t *testing.T) {
 					a Article
 					m map[string]any
 				)
-				err := Unmarshal([]byte(articleAMetaBody), &a, UnmarshalMeta(&m))
+				err := Unmarshal([]byte(articleAToplevelMetaBody), &a, UnmarshalMeta(&m))
 				return m, err
 			},
 			expect:      map[string]any{"foo": "bar"},
@@ -371,7 +370,7 @@ func TestUnmarshalMeta(t *testing.T) {
 					a Article
 					m meta
 				)
-				err := Unmarshal([]byte(articleAMetaBody), &a, UnmarshalMeta(&m))
+				err := Unmarshal([]byte(articleAToplevelMetaBody), &a, UnmarshalMeta(&m))
 				return &m, err
 			},
 			expect:      &meta{Foo: "bar"},
@@ -383,7 +382,7 @@ func TestUnmarshalMeta(t *testing.T) {
 					a []*Article
 					m meta
 				)
-				err := Unmarshal([]byte(articlesABMetaBody), &a, UnmarshalMeta(&m))
+				err := Unmarshal([]byte(articlesABToplevelMetaBody), &a, UnmarshalMeta(&m))
 				return &m, err
 			},
 			expect:      &meta{Foo: "bar"},
@@ -395,7 +394,7 @@ func TestUnmarshalMeta(t *testing.T) {
 					a Article
 					m meta
 				)
-				err := Unmarshal([]byte(articleAMetaBody), &a, UnmarshalMeta(m))
+				err := Unmarshal([]byte(articleAToplevelMetaBody), &a, UnmarshalMeta(m))
 				return &m, err
 			},
 			expect:      new(meta),
@@ -407,7 +406,7 @@ func TestUnmarshalMeta(t *testing.T) {
 					a Article
 					m string
 				)
-				err := Unmarshal([]byte(articleAInvalidMetaBody), &a, UnmarshalMeta(m))
+				err := Unmarshal([]byte(articleAInvalidToplevelMetaBody), &a, UnmarshalMeta(m))
 				return &m, err
 			},
 			expect:      nil,
@@ -588,6 +587,47 @@ func TestUnmarshalMemberNameValidation(t *testing.T) {
 
 			err = tc.do([]byte(tc.given), UnmarshalDisableNameValidation())
 			is.MustNoError(t, err)
+		})
+	}
+}
+
+func BenchmarkUnmarshal(b *testing.B) {
+	benchmarks := []struct {
+		name   string
+		data   string
+		target any
+		opts   []UnmarshalOption
+	}{
+		{
+			name:   "ArticleSimple",
+			data:   articleABody,
+			target: Article{},
+			opts:   nil,
+		}, {
+			name:   "ArticleSimpleWithMeta",
+			data:   articleAToplevelMetaBody,
+			target: Article{},
+			opts:   []UnmarshalOption{UnmarshalMeta(map[string]any{"foo": "bar"})},
+		}, {
+			name:   "ArticleComplex",
+			data:   articleRelatedCommentsNestedWithIncludeBody,
+			target: ArticleRelated{},
+			opts:   nil,
+		}, {
+			name:   "ArticleComplexDisableNameValidation",
+			data:   articleRelatedCommentsNestedWithIncludeBody,
+			target: ArticleRelated{},
+			opts:   []UnmarshalOption{UnmarshalDisableNameValidation()},
+		},
+	}
+
+	for _, bm := range benchmarks {
+		bm := bm
+		data := []byte(bm.data)
+		b.Run(bm.name, func(b *testing.B) {
+			for n := 0; n < b.N; n++ {
+				_ = Unmarshal(data, &bm.target, bm.opts...)
+			}
 		})
 	}
 }

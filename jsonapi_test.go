@@ -105,6 +105,7 @@ var (
 	articleALinkedBody                = `{"data":{"id":"1","type":"articles","attributes":{"title":"A"},"links":{"self":"https://example.com/articles/1","related":{"href":"https://example.com/articles/1/comments","meta":{"count":10}}}}}`
 	articleLinkedOnlySelfBody         = `{"data":{"id":"1","type":"articles","links":{"self":"https://example.com/articles/1"}}}`
 	articleWithResourceObjectMetaBody = `{"data":{"type":"articles","id":"1","attributes":{"title":"A"},"meta":{"count":10}}}`
+	articleAToplevelMetaBody          = `{"data":{"id":"1","type":"articles","attributes":{"title":"A"}},"meta":{"foo":"bar"}}`
 	articleAWithMetaBody              = `{"data":{"id":"1","type":"articles","attributes":{"title":"A"},"meta":{"views":10,"reads":4}}}`
 	articleEmbeddedBody               = `{"data":{"type":"articles","id":"1","attributes":{"title":"A","lastModified":"1989-06-15T00:00:00Z"}}}`
 
