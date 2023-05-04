@@ -604,7 +604,7 @@ func BenchmarkUnmarshal(b *testing.B) {
 			target: Article{},
 			opts:   nil,
 		}, {
-			name:   "ArticleSimpleWithMeta",
+			name:   "ArticleSimpleWithToplevelMeta",
 			data:   articleAToplevelMetaBody,
 			target: Article{},
 			opts:   []UnmarshalOption{UnmarshalMeta(map[string]any{"foo": "bar"})},
