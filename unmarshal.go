@@ -144,6 +144,8 @@ func unmarshalResourceObjects(ros []*resourceObject, v any, m *Unmarshaler) erro
 		return &TypeError{Actual: outType.String(), Expected: []string{"slice"}}
 	}
 
+	// allocate an empty slice of the outType if there are no resource objects to unmarshal,
+	// because the main loop cannot construct run and construct one.
 	if len(ros) == 0 {
 		outValue = reflect.MakeSlice(outType, 0, 0)
 	}
