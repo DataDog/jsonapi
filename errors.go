@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -132,6 +133,33 @@ func (e *Error) MarshalJSON() ([]byte, error) {
 		Status: status,
 		alias:  (*alias)(e),
 	})
+}
+
+// UnmarshalJSON implements the json.Unmarshaler interface.
+func (e *Error) UnmarshalJSON(data []byte) error {
+	type alias Error
+
+	aux := &struct {
+		*alias
+		Status string `json:"status"`
+	}{
+		alias: (*alias)(e),
+	}
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	if aux.Status != "" {
+		status, err := strconv.Atoi(aux.Status)
+		if err != nil {
+			return err
+		}
+
+		e.Status = &status
+	}
+
+	return nil
 }
 
 // Error implements the error interface.
