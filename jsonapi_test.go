@@ -94,23 +94,24 @@ var (
 	}
 
 	// article bodies
-	nullDataBody                      = `{"data":null}`
-	emptySingleBody                   = `{"data":{}}`
-	emptyManyBody                     = `{"data":[]}`
-	articleABody                      = `{"data":{"type":"articles","id":"1","attributes":{"title":"A"}}}`
-	articleANoIDBody                  = `{"data":{"type":"articles","attributes":{"title":"A"}}}`
-	articleAInvalidTypeBody           = `{"data":{"type":"not-articles","id":"1","attributes":{"title":"A"}}}`
-	articleOmitTitleFullBody          = `{"data":{"type":"articles","id":"1"}}`
-	articleOmitTitlePartialBody       = `{"data":{"type":"articles","id":"1","attributes":{"subtitle":"A"}}}`
-	articlesABBody                    = `{"data":[{"type":"articles","id":"1","attributes":{"title":"A"}},{"type":"articles","id":"2","attributes":{"title":"B"}}]}`
-	articleCompleteBody               = `{"data":{"id":"1","type":"articles","attributes":{"info":{"publishDate":"1989-06-15T00:00:00Z","tags":["a","b"],"isPublic":true,"metrics":{"views":10,"reads":4}},"title":"A","subtitle":"AA"}}}`
-	articleALinkedBody                = `{"data":{"id":"1","type":"articles","attributes":{"title":"A"},"links":{"self":"https://example.com/articles/1","related":{"href":"https://example.com/articles/1/comments","meta":{"count":10}}}}}`
-	articleLinkedOnlySelfBody         = `{"data":{"id":"1","type":"articles","links":{"self":"https://example.com/articles/1"}}}`
-	articleWithResourceObjectMetaBody = `{"data":{"type":"articles","id":"1","attributes":{"title":"A"},"meta":{"count":10}}}`
-	articleAWithMetaBody              = `{"data":{"id":"1","type":"articles","attributes":{"title":"A"},"meta":{"views":10,"reads":4}}}`
-	articleNullWithMetaBody           = `{"data":null,"meta":{"foo":"bar"}}`
-	articleEmptyArrayWithMetaBody     = `{"data":[],"meta":{"foo":"bar"}}`
-	articleEmbeddedBody               = `{"data":{"type":"articles","id":"1","attributes":{"title":"A","lastModified":"1989-06-15T00:00:00Z"}}}`
+	nullDataBody                          = `{"data":null}`
+	emptySingleBody                       = `{"data":{}}`
+	emptyManyBody                         = `{"data":[]}`
+	articleABody                          = `{"data":{"type":"articles","id":"1","attributes":{"title":"A"}}}`
+	articleANoIDBody                      = `{"data":{"type":"articles","attributes":{"title":"A"}}}`
+	articleAInvalidTypeBody               = `{"data":{"type":"not-articles","id":"1","attributes":{"title":"A"}}}`
+	articleOmitTitleFullBody              = `{"data":{"type":"articles","id":"1"}}`
+	articleOmitTitlePartialBody           = `{"data":{"type":"articles","id":"1","attributes":{"subtitle":"A"}}}`
+	articlesABBody                        = `{"data":[{"type":"articles","id":"1","attributes":{"title":"A"}},{"type":"articles","id":"2","attributes":{"title":"B"}}]}`
+	articleCompleteBody                   = `{"data":{"id":"1","type":"articles","attributes":{"info":{"publishDate":"1989-06-15T00:00:00Z","tags":["a","b"],"isPublic":true,"metrics":{"views":10,"reads":4}},"title":"A","subtitle":"AA"}}}`
+	articleALinkedBody                    = `{"data":{"id":"1","type":"articles","attributes":{"title":"A"},"links":{"self":"https://example.com/articles/1","related":{"href":"https://example.com/articles/1/comments","meta":{"count":10}}}}}`
+	articleLinkedOnlySelfBody             = `{"data":{"id":"1","type":"articles","links":{"self":"https://example.com/articles/1"}}}`
+	articleWithResourceObjectMetaBody     = `{"data":{"type":"articles","id":"1","attributes":{"title":"A"},"meta":{"count":10}}}`
+	articleAToplevelMetaBody              = `{"data":{"id":"1","type":"articles","attributes":{"title":"A"}},"meta":{"foo":"bar"}}`
+	articleAWithMetaBody                  = `{"data":{"id":"1","type":"articles","attributes":{"title":"A"},"meta":{"views":10,"reads":4}}}`
+	articleNullWithToplevelMetaBody       = `{"data":null,"meta":{"foo":"bar"}}`
+	articleEmptyArrayWithToplevelMetaBody = `{"data":[],"meta":{"foo":"bar"}}`
+	articleEmbeddedBody                   = `{"data":{"type":"articles","id":"1","attributes":{"title":"A","lastModified":"1989-06-15T00:00:00Z"}}}`
 
 	// articles with relationships bodies
 	articleRelatedInvalidEmptyRelationshipBody  = `{"data":{"id":"1","type":"articles","attributes":{"title":"A"},"relationships":{"author":{}}}}`
