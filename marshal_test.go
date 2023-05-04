@@ -24,12 +24,12 @@ func TestMarshal(t *testing.T) {
 		{
 			description: "nil",
 			given:       nil,
-			expect:      `{"data":null}`,
+			expect:      nullDataBody,
 			expectError: nil,
 		}, {
 			description: "Article (empty)",
 			given:       Article{},
-			expect:      `{"data":null}`,
+			expect:      nullDataBody,
 			expectError: nil,
 		}, {
 			description: "*Article (empty)",
@@ -39,12 +39,12 @@ func TestMarshal(t *testing.T) {
 		}, {
 			description: "[]*Article (nil)",
 			given:       []*Article(nil),
-			expect:      emptyBody,
+			expect:      emptyManyBody,
 			expectError: nil,
 		}, {
 			description: "[]*Article (empty)",
 			given:       make([]*Article, 0),
-			expect:      emptyBody,
+			expect:      emptyManyBody,
 			expectError: nil,
 		}, {
 			description: "Article (missing ID)",
@@ -299,10 +299,7 @@ func TestMarshal(t *testing.T) {
 func TestMarshalMeta(t *testing.T) {
 	t.Parallel()
 
-	articleAMetaBody := `{"data":{"id":"1","type":"articles","attributes":{"title":"A"}},"meta":{"foo":"bar"}}`
-	articleAMetaNullBody := `{"data": null,"meta":{"foo":"bar"}}`
-	articleAMetaEmptyBody := `{"data":[],"meta":{"foo":"bar"}}`
-	errorsObjectMetaBody := `{"meta":{"foo":"bar"},"errors":[{"title":"T"}]}`
+	errorsObjectToplevelMetaBody := `{"meta":{"foo":"bar"},"errors":[{"title":"T"}]}`
 
 	tests := []struct {
 		description string
@@ -315,7 +312,7 @@ func TestMarshalMeta(t *testing.T) {
 			description: "map[string]any",
 			given:       &articleA,
 			givenMeta:   map[string]any{"foo": "bar"},
-			expect:      articleAMetaBody,
+			expect:      articleAToplevelMetaBody,
 			expectError: nil,
 		}, {
 			description: "struct",
@@ -323,7 +320,7 @@ func TestMarshalMeta(t *testing.T) {
 			givenMeta: &struct {
 				Foo string `json:"foo"`
 			}{Foo: "bar"},
-			expect:      articleAMetaBody,
+			expect:      articleAToplevelMetaBody,
 			expectError: nil,
 		}, {
 			description: "non-object type",
@@ -335,25 +332,25 @@ func TestMarshalMeta(t *testing.T) {
 			description: "map[string]any errors object",
 			given:       errorsSimpleSliceSinglePtr,
 			givenMeta:   map[string]any{"foo": "bar"},
-			expect:      errorsObjectMetaBody,
+			expect:      errorsObjectToplevelMetaBody,
 			expectError: nil,
 		}, {
 			description: "map[string]any with nil body",
 			given:       nil,
 			givenMeta:   map[string]any{"foo": "bar"},
-			expect:      articleAMetaNullBody,
+			expect:      articleNullWithToplevelMetaBody,
 			expectError: nil,
 		}, {
 			description: "map[string]any with Article (empty)",
 			given:       Article{},
 			givenMeta:   map[string]any{"foo": "bar"},
-			expect:      articleAMetaNullBody,
+			expect:      articleNullWithToplevelMetaBody,
 			expectError: nil,
 		}, {
 			description: "map[string]any with body []*Article (empty)",
 			given:       []*Article(nil),
 			givenMeta:   map[string]any{"foo": "bar"},
-			expect:      articleAMetaEmptyBody,
+			expect:      articleEmptyArrayWithToplevelMetaBody,
 			expectError: nil,
 		},
 	}
@@ -764,6 +761,48 @@ func TestMarshalMemberNameValidation(t *testing.T) {
 			opts = append(opts, MarshalDisableNameValidation())
 			_, err = Marshal(tc.given, opts...)
 			is.MustNoError(t, err)
+		})
+	}
+}
+
+func BenchmarkMarshal(b *testing.B) {
+	benchmarks := []struct {
+		name  string
+		given any
+		opts  []MarshalOption
+	}{
+		{
+			name:  "ArticleSimple",
+			given: articleA,
+			opts:  nil,
+		}, {
+			name:  "ArticleSimpleWithToplevelMeta",
+			given: articleA,
+			opts: []MarshalOption{
+				MarshalMeta(map[string]any{"foo": "bar"}),
+			},
+		}, {
+			name:  "ArticleComplex",
+			given: articleRelatedComments,
+			opts: []MarshalOption{
+				MarshalInclude(&commentAWithAuthor, &authorA),
+			},
+		}, {
+			name:  "ArticleComplexDisableNameValidation",
+			given: articleRelatedComments,
+			opts: []MarshalOption{
+				MarshalInclude(&commentAWithAuthor, &authorA),
+				MarshalDisableNameValidation(),
+			},
+		},
+	}
+
+	for _, bm := range benchmarks {
+		bm := bm
+		b.Run(bm.name, func(b *testing.B) {
+			for n := 0; n < b.N; n++ {
+				_, _ = Marshal(bm.given, bm.opts...)
+			}
 		})
 	}
 }

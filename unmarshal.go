@@ -92,12 +92,6 @@ func Unmarshal(data []byte, v any, opts ...UnmarshalOption) (err error) {
 }
 
 func (d *document) unmarshal(v any, m *Unmarshaler) (err error) {
-	// this means we couldn't decode anything (e.g. {}, [], ...)
-	if d.isEmpty() {
-		err = &RequestBodyError{t: v}
-		return
-	}
-
 	// verify full-linkage in-case this is a compound document
 	if err = d.verifyFullLinkage(true); err != nil {
 		return
@@ -108,7 +102,7 @@ func (d *document) unmarshal(v any, m *Unmarshaler) (err error) {
 		if err != nil {
 			return
 		}
-	} else {
+	} else if d.DataOne != nil {
 		err = d.DataOne.unmarshal(v, m)
 		if err != nil {
 			return
@@ -148,6 +142,12 @@ func unmarshalResourceObjects(ros []*resourceObject, v any, m *Unmarshaler) erro
 	// first, it must be a struct since we'll be parsing the jsonapi struct tags
 	if outType.Kind() != reflect.Slice {
 		return &TypeError{Actual: outType.String(), Expected: []string{"slice"}}
+	}
+
+	// allocate an empty slice of the outType if there are no resource objects to unmarshal,
+	// because the main loop cannot construct run and construct one.
+	if len(ros) == 0 {
+		outValue = reflect.MakeSlice(outType, 0, 0)
 	}
 
 	for _, ro := range ros {
