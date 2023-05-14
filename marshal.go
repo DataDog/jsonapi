@@ -165,6 +165,7 @@ func makeDocument(v any, m *Marshaler, isRelationship bool) (*document, error) {
 
 	// at this point we have no errors, so lets make the document
 	d = newDocument()
+	d.isRelationship = isRelationship
 
 	// the given "v" is the resource object (or a slice of them)
 	//
@@ -186,7 +187,7 @@ func makeDocument(v any, m *Marshaler, isRelationship bool) (*document, error) {
 		rv := derefValue(reflect.ValueOf(v))
 		for i := 0; i < rv.Len(); i++ {
 			iv := rv.Index(i).Interface()
-			ro, err := makeResourceObject(iv, reflect.TypeOf(iv), m, isRelationship)
+			ro, err := d.makeResourceObject(iv, reflect.TypeOf(iv), m)
 			if err != nil {
 				return nil, err
 			}
@@ -199,7 +200,7 @@ func makeDocument(v any, m *Marshaler, isRelationship bool) (*document, error) {
 			break
 		}
 		// if we get a struct we just make a single resource object
-		ro, err := makeResourceObject(v, vt, m, isRelationship)
+		ro, err := d.makeResourceObject(v, vt, m)
 		if err != nil {
 			return nil, err
 		}
@@ -210,7 +211,7 @@ func makeDocument(v any, m *Marshaler, isRelationship bool) (*document, error) {
 
 	// if we got any included data, build the resource object/s and include them
 	for _, v := range m.included {
-		ro, err := makeResourceObject(v, reflect.TypeOf(v), m, isRelationship)
+		ro, err := d.makeResourceObject(v, reflect.TypeOf(v), m)
 		if err != nil {
 			return nil, err
 		}
@@ -319,7 +320,7 @@ func makeDocumentErrors(v any, m *Marshaler) (*document, error) {
 	return d, nil
 }
 
-func makeResourceObject(v any, vt reflect.Type, m *Marshaler, isRelationship bool) (*resourceObject, error) {
+func (d *document) makeResourceObject(v any, vt reflect.Type, m *Marshaler) (*resourceObject, error) {
 	// the given "v" here is a single resource object
 
 	// first, it must be a struct since we'll be parsing the jsonapi struct tags
@@ -399,7 +400,7 @@ func makeResourceObject(v any, vt reflect.Type, m *Marshaler, isRelationship boo
 
 			return nil, ErrMarshalInvalidPrimaryField
 		case attribute:
-			if isRelationship {
+			if d.isRelationship {
 				// relationships must only be resource identifier objects so skip attributes
 				continue
 			}
@@ -422,14 +423,14 @@ func makeResourceObject(v any, vt reflect.Type, m *Marshaler, isRelationship boo
 				metaObject = nil
 			}
 
-			if isRelationship {
+			if d.isRelationship {
 				// let meta become document-level for relationships (treated as nested documents)
 				m.meta = metaObject
 			} else {
 				ro.Meta = metaObject
 			}
 		case relationship:
-			if isRelationship {
+			if d.isRelationship {
 				// relationship nesting must occur in include data, not the relationship fields
 				continue
 			}
