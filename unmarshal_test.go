@@ -257,7 +257,7 @@ func TestUnmarshal(t *testing.T) {
 				return &a, err
 			},
 			expect:      new(Article),
-			expectError: ErrMissingDataField,
+			expectError: ErrDocumentMissingRequiredMembers,
 		}, {
 			description: "*Article (invalid type)",
 			given:       articleAInvalidTypeBody,
@@ -289,7 +289,7 @@ func TestUnmarshal(t *testing.T) {
 			expect:      new(Article),
 			expectError: &PartialLinkageError{[]string{"{Type: author, ID: 1}"}},
 		}, {
-			description: "*ArticleRelated empty relationships (invalid)",
+			description: "*ArticleRelated empty relationships object",
 			given:       articleRelatedInvalidEmptyRelationshipBody,
 			do: func(body []byte) (any, error) {
 				var a ArticleRelated
@@ -297,10 +297,10 @@ func TestUnmarshal(t *testing.T) {
 				return &a, err
 			},
 			expect:      &ArticleRelated{},
-			expectError: ErrMissingDataField,
+			expectError: ErrRelationshipMissingRequiredMembers,
 		}, {
-			// this test verifies that empty relationship bodies (null and []) unmarshal
-			description: "*ArticleRelated empty relationships",
+			// this test verifies that relationship data objects that are null or [] unmarshal
+			description: "*ArticleRelated empty relationships data (valid)",
 			given:       articleRelatedNoOmitEmptyBody,
 			do: func(body []byte) (any, error) {
 				var a ArticleRelated
@@ -309,6 +309,17 @@ func TestUnmarshal(t *testing.T) {
 			},
 			expect:      &ArticleRelated{ID: "1", Title: "A"},
 			expectError: nil,
+		}, {
+			// this test verifies that empty relationship data objects do not unmarshal
+			description: "*ArticleRelated empty relationships data (invalid)",
+			given:       articleRelatedInvalidEmptyDataBody,
+			do: func(body []byte) (any, error) {
+				var a ArticleRelated
+				err := Unmarshal(body, &a)
+				return &a, err
+			},
+			expect:      &ArticleRelated{},
+			expectError: ErrEmptyDataObject,
 		}, {
 			description: "*ArticleRelated.Author",
 			given:       articleRelatedAuthorBody,
@@ -322,6 +333,26 @@ func TestUnmarshal(t *testing.T) {
 				Title:  "A",
 				Author: &Author{ID: "1"},
 			},
+			expectError: nil,
+		}, {
+			description: "*ArticleRelated.Author (links only)",
+			given:       articleRelatedAuthorLinksOnlyBody,
+			do: func(body []byte) (any, error) {
+				var a ArticleRelated
+				err := Unmarshal(body, &a)
+				return &a, err
+			},
+			expect:      &ArticleRelated{ID: "1", Title: "A"},
+			expectError: nil,
+		}, {
+			description: "*ArticleRelated.Author (meta only)",
+			given:       articleRelatedAuthorMetaOnlyBody,
+			do: func(body []byte) (any, error) {
+				var a ArticleRelated
+				err := Unmarshal(body, &a)
+				return &a, err
+			},
+			expect:      &ArticleRelated{ID: "1", Title: "A"},
 			expectError: nil,
 		}, {
 			description: "[]*ArticleRelated.Author twice",
@@ -393,7 +424,7 @@ func TestUnmarshal(t *testing.T) {
 				return &a, err
 			},
 			expect:      &Article{},
-			expectError: ErrMissingDataField,
+			expectError: ErrDocumentMissingRequiredMembers,
 		},
 	}
 

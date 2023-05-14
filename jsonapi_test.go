@@ -115,6 +115,7 @@ var (
 
 	// articles with relationships bodies
 	articleRelatedInvalidEmptyRelationshipBody  = `{"data":{"id":"1","type":"articles","attributes":{"title":"A"},"relationships":{"author":{}}}}`
+	articleRelatedInvalidEmptyDataBody          = `{"data":{"id":"1","type":"articles","attributes":{"title":"A"},"relationships":{"author":{"data":{}}}}}`
 	articleRelatedNoOmitEmptyBody               = `{"data":{"id":"1","type":"articles","attributes":{"title":"A"},"relationships":{"author":{"data":null},"comments":{"data":[]}}}}`
 	articleRelatedAuthorBody                    = `{"data":{"id":"1","type":"articles","attributes":{"title":"A"},"relationships":{"author":{"data":{"id":"1","type":"author"},"links":{"self":"http://example.com/articles/1/relationships/author","related":"http://example.com/articles/1/author"}}}}}`
 	articleRelatedAuthorTwiceBody               = `{"data":[{"id":"1","type":"articles","attributes":{"title":"A"},"relationships":{"author":{"data":{"id":"1","type":"author"}}}},{"id":"2","type":"articles","attributes":{"title":"B"},"relationships":{"author":{"data":{"id":"1","type":"author"}}}}]}`
@@ -126,6 +127,8 @@ var (
 	articleRelatedCompleteWithIncludeBody       = `{"data":{"id":"1","type":"articles","attributes":{"title":"A"},"relationships":{"author":{"data":{"id":"1","type":"author"}},"comments":{"data":[{"id":"1","type":"comments"},{"id":"2","type":"comments"}]}}},"included":[{"id":"1","type":"author","attributes":{"name":"A"}},{"id":"1","type":"comments","attributes":{"body":"A"}},{"id":"2","type":"comments","attributes":{"body":"B"}}]}`
 	articleRelatedCommentsNestedWithIncludeBody = `{"data":{"id":"1","type":"articles","attributes":{"title":"A"},"relationships":{"comments":{"data":[{"id":"1","type":"comments"}],"links":{"self":"http://example.com/articles/1/relationships/comments","related":"http://example.com/articles/1/comments"}}}},"included":[{"id":"1","type":"comments","attributes":{"body":"A"},"relationships":{"author":{"data":{"id":"1","type":"author"},"links":{"self":"http://example.com/comments/1/relationships/author","related":"http://example.com/comments/1/author"}}}},{"id":"1","type":"author","attributes":{"name":"A"}}]}`
 	articleWithIncludeOnlyBody                  = `{"data":{"id":"1","type":"articles","attributes":{"title":"A"}},"included":[{"id":"1","type":"author","attributes":{"name":"A"}}]}`
+	articleRelatedAuthorLinksOnlyBody           = `{"data":{"id":"1","type":"articles","attributes":{"title":"A"},"relationships":{"author":{"links":{"self":"http://example.com/articles/1/relationships/author","related":"http://example.com/articles/1/author"}}}}}`
+	articleRelatedAuthorMetaOnlyBody            = `{"data":{"id":"1","type":"articles","attributes":{"title":"A"},"relationships":{"author":{"meta":{"foo":"bar"}}}}}`
 
 	// articles with non-conforming member name bodies
 	authorWithInvalidTypeNameBody                           = `{"data":{"id":"1","type":"aut%hor"}}`

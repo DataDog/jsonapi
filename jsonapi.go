@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
-	"strings"
 )
 
 // ResourceObject is a JSON:API resource object as defined by https://jsonapi.org/format/1.0/#document-resource-objects
@@ -16,6 +15,33 @@ type resourceObject struct {
 	Relationships map[string]*document `json:"relationships,omitempty"`
 	Meta          any                  `json:"meta,omitempty"`
 	Links         *Link                `json:"links,omitempty"`
+}
+
+// UnmarshalJSON implements the json.Unmarshaler interface.
+func (ro *resourceObject) UnmarshalJSON(data []byte) error {
+	type alias resourceObject
+
+	auxRaw := &struct {
+		Rels map[string]json.RawMessage `json:"relationships,omitempty"`
+		*alias
+	}{
+		alias: (*alias)(ro),
+	}
+	if err := json.Unmarshal(data, &auxRaw); err != nil {
+		return err
+	}
+
+	ro.Relationships = make(map[string]*document, len(auxRaw.Rels))
+	for relName, documentRaw := range auxRaw.Rels {
+		// mark the created sub-documents as relationships so that the document Unmarshaler
+		// can handle their different member requirements
+		d := document{isRelationship: true}
+		if err := json.Unmarshal(documentRaw, &d); err != nil {
+			return err
+		}
+		ro.Relationships[relName] = &d
+	}
+	return nil
 }
 
 // JSONAPI is a JSON:API object as defined by https://jsonapi.org/format/1.0/#document-jsonapi-object.
@@ -108,6 +134,9 @@ type document struct {
 	DataOne  *resourceObject   `json:"-"`
 	DataMany []*resourceObject `json:"-"`
 
+	// isRelationship marks a document as a relationship sub-document (within primary data)
+	isRelationship bool `json:"-"`
+
 	// Meta is Meta Information as defined by https://jsonapi.org/format/1.0/#document-meta.
 	Meta any `json:"meta,omitempty"`
 
@@ -175,13 +204,15 @@ func (d *document) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	rawData := string(auxRaw.Data)
-	switch rawData {
+	switch string(auxRaw.Data) {
 	case "":
-		// no "data" member
-		if auxRaw.Errors == nil && auxRaw.Meta == nil {
-			// missing required top-level fields
-			return ErrMissingDataField
+		// no "data" field -> check that other required members are present
+		if d.isRelationship {
+			if d.Meta == nil && d.Links == nil {
+				return ErrRelationshipMissingRequiredMembers
+			}
+		} else if d.Meta == nil && d.Errors == nil {
+			return ErrDocumentMissingRequiredMembers
 		}
 		return nil
 	case "{}":
@@ -192,7 +223,7 @@ func (d *document) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
-	if strings.HasPrefix(rawData, "[") {
+	if auxRaw.Data[0] == '[' {
 		d.hasMany = true
 		return json.Unmarshal(auxRaw.Data, &auxRaw.DataMany)
 	}
