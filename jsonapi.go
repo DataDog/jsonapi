@@ -32,14 +32,14 @@ func (ro *resourceObject) UnmarshalJSON(data []byte) error {
 	}
 
 	ro.Relationships = make(map[string]*document, len(auxRaw.Rels))
-	for relName, documentRaw := range auxRaw.Rels {
+	for name, raw := range auxRaw.Rels {
 		// mark the created sub-documents as relationships so that the document Unmarshaler
 		// can handle their different member requirements
 		d := document{isRelationship: true}
-		if err := json.Unmarshal(documentRaw, &d); err != nil {
+		if err := json.Unmarshal(raw, &d); err != nil {
 			return err
 		}
-		ro.Relationships[relName] = &d
+		ro.Relationships[name] = &d
 	}
 	return nil
 }
