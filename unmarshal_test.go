@@ -730,7 +730,7 @@ func TestUnmarshalMemberNameValidation(t *testing.T) {
 			err := tc.do([]byte(tc.given))
 			is.EqualError(t, tc.expectError, err)
 
-			err = tc.do([]byte(tc.given), UnmarshalDisableNameValidation())
+			err = tc.do([]byte(tc.given), UnmarshalSetNameValidation(DisableValidation))
 			is.MustNoError(t, err)
 		})
 	}
@@ -762,7 +762,7 @@ func BenchmarkUnmarshal(b *testing.B) {
 			name:   "ArticleComplexDisableNameValidation",
 			data:   articleRelatedCommentsNestedWithIncludeBody,
 			target: ArticleRelated{},
-			opts:   []UnmarshalOption{UnmarshalDisableNameValidation()},
+			opts:   []UnmarshalOption{UnmarshalSetNameValidation(DisableValidation)},
 		}, {
 			name:   "ArticlesComplex",
 			data:   articlesRelatedComplexBody,
@@ -772,7 +772,7 @@ func BenchmarkUnmarshal(b *testing.B) {
 			name:   "ArticlesComplexDisableNameValidation",
 			data:   articlesRelatedComplexBody,
 			target: []*ArticleRelated{},
-			opts:   []UnmarshalOption{UnmarshalDisableNameValidation()},
+			opts:   []UnmarshalOption{UnmarshalSetNameValidation(DisableValidation)},
 		},
 	}
 

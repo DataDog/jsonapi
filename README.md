@@ -41,13 +41,13 @@ if err != nil {
 
 fmt.Println("%s", string(b))
 // {
-//     "data": [
+//     "data": {
 //         "id": "1",
 //         "type": "articles",
 //         "attributes": {
 //             "title": "Hello World"
 //         }
-//     ]
+//     }
 // }
 ```
 
@@ -56,7 +56,7 @@ fmt.Println("%s", string(b))
 [jsonapi.Unmarshal](https://pkg.go.dev/github.com/DataDog/jsonapi#Marshal)
 
 ```go
-body := `{"data":[{"id":"1","type":"articles","attributes":{"title":"Hello World"}}]}`
+body := `{"data":{"id":"1","type":"articles","attributes":{"title":"Hello World"}}}`
 
 type Article struct {
     ID    string `jsonapi:"primary,articles"`
@@ -93,8 +93,8 @@ Both [jsonapi.Marshal](https://pkg.go.dev/github.com/DataDog/jsonapi#Marshal) an
 
 | Option | Supports |
 | --- | --- |
-| [jsonapi.MarshalOption](https://pkg.go.dev/github.com/DataDog/jsonapi#MarshalOption) | [meta](https://pkg.go.dev/github.com/DataDog/jsonapi#MarshalMeta), [json:api](https://pkg.go.dev/github.com/DataDog/jsonapi#MarshalJSONAPI), [includes](https://pkg.go.dev/github.com/DataDog/github.com/jsonapi#MarshalInclude), [document links](https://pkg.go.dev/github.com/DataDog/jsonapi#MarshalLinks), [sparse fieldsets](https://pkg.go.dev/github.com/DataDog/jsonapi#MarshalFields) |
-| [jsonapi.UnmarshalOption](https://pkg.go.dev/github.com/DataDog/jsonapi#UnmarshalOption) | [meta](https://pkg.go.dev/github.com/DataDog/jsonapi#UnmarshalMeta) |
+| [jsonapi.MarshalOption](https://pkg.go.dev/github.com/DataDog/jsonapi#MarshalOption) | [meta](https://pkg.go.dev/github.com/DataDog/jsonapi#MarshalMeta), [json:api](https://pkg.go.dev/github.com/DataDog/jsonapi#MarshalJSONAPI), [includes](https://pkg.go.dev/github.com/DataDog/github.com/jsonapi#MarshalInclude), [document links](https://pkg.go.dev/github.com/DataDog/jsonapi#MarshalLinks), [sparse fieldsets](https://pkg.go.dev/github.com/DataDog/jsonapi#MarshalFields), [name validation](https://pkg.go.dev/github.com/DataDog/jsonapi#MarshalSetNameValidation) |
+| [jsonapi.UnmarshalOption](https://pkg.go.dev/github.com/DataDog/jsonapi#UnmarshalOption) | [meta](https://pkg.go.dev/github.com/DataDog/jsonapi#UnmarshalMeta), [name validation](https://pkg.go.dev/github.com/DataDog/jsonapi#UnmarshalSetNameValidation) |
 
 ## Non-String Identifiers
 

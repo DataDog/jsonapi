@@ -10,14 +10,14 @@ func TestIsValidMemberName(t *testing.T) {
 	t.Parallel()
 
 	// associate member name strings with the strictest validation mode they should pass
-	testValidations := map[memberNameValidationMode][]string{
-		strictValidation: {
+	testValidations := map[MemberNameValidationMode][]string{
+		StrictValidation: {
 			"a",
 			"lowercase1with2numerals",
 			"camelCase",
 			"camel12Case9WithNumera1s",
 		},
-		defaultValidation: {
+		DefaultValidation: {
 			"A",
 			"9camelCaseWithNumeralPrefix",
 			"camelCaseWithNumeralSuffix10",
@@ -31,7 +31,7 @@ func TestIsValidMemberName(t *testing.T) {
 			"12",
 			"ƒunky unicode",
 		},
-		disableValidation: {
+		DisableValidation: {
 			"bad%character",
 		},
 	}
@@ -43,17 +43,17 @@ func TestIsValidMemberName(t *testing.T) {
 			t.Run(name, func(t *testing.T) {
 				t.Parallel()
 
-				passesStrict := isValidMemberName(name, strictValidation)
-				passesDefault := isValidMemberName(name, defaultValidation)
+				passesStrict := isValidMemberName(name, StrictValidation)
+				passesDefault := isValidMemberName(name, DefaultValidation)
 
 				switch mode {
-				case strictValidation:
+				case StrictValidation:
 					is.Equal(t, true, passesStrict)
 					is.Equal(t, true, passesDefault)
-				case defaultValidation:
+				case DefaultValidation:
 					is.Equal(t, false, passesStrict)
 					is.Equal(t, true, passesDefault)
-				case disableValidation:
+				case DisableValidation:
 					is.Equal(t, false, passesStrict)
 					is.Equal(t, false, passesDefault)
 				}
