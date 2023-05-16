@@ -25,13 +25,13 @@ jobs:
         run: go test -v ./...
       - name: test-race
         run: go test -v -race ./...
+      - name: benchmark
+        run: go test -bench ./... | tee benchmarks.txt
       - name: fetch-previous-benchmark
-        uses: actions/cache@v1
+        uses: actions/cache@v3
         with:
           path: ./cache
           key: ${{ runner.os }}-benchmark
-      - name: benchmark
-        run: go test -bench ./... | tee benchmarks.txt
       - name: store-current-benchmark
         uses: benchmark-action/github-action-benchmark@v1
         with:
