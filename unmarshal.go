@@ -25,6 +25,16 @@ func UnmarshalMeta(meta any) UnmarshalOption {
 	}
 }
 
+// UnmarshalDefaultNameValidation re-enables default member name validation.
+//
+// This mode follows the basic naming rules from https://jsonapi.org/format/#document-member-names.
+// This option is useful for appending to a default list of Unmarshal Options being used.
+func UnmarshalDefaultNameValidation() UnmarshalOption {
+	return func(m *Unmarshaler) {
+		m.memberNameValidationMode = defaultValidation
+	}
+}
+
 // UnmarshalStrictNameValidation enables member name validation that is more strict than default.
 //
 // In addition to the basic naming rules from https://jsonapi.org/format/#document-member-names,

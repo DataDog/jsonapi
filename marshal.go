@@ -86,6 +86,16 @@ func MarshalClientMode() MarshalOption {
 	}
 }
 
+// MarshalDefaultNameValidation re-enables default member name validation.
+//
+// This mode follows the basic naming rules from https://jsonapi.org/format/#document-member-names.
+// This option is useful for appending to a default list of Marshal Options being used.
+func MarshalDefaultNameValidation() MarshalOption {
+	return func(m *Marshaler) {
+		m.memberNameValidationMode = defaultValidation
+	}
+}
+
 // MarshalStrictNameValidation enables member name validation that is more strict than default.
 //
 // In addition to the basic naming rules from https://jsonapi.org/format/#document-member-names,
