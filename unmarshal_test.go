@@ -394,6 +394,16 @@ func TestUnmarshal(t *testing.T) {
 			},
 			expect:      &Article{},
 			expectError: ErrMissingDataField,
+		}, {
+			description: "[]*ArticleRelated complex relationships with include",
+			given:       articlesRelatedComplexBody,
+			do: func(body []byte) (any, error) {
+				var a []*ArticleRelated
+				err := Unmarshal(body, &a)
+				return &a, err
+			},
+			expect:      &articlesRelatedComplex,
+			expectError: nil,
 		},
 	}
 
@@ -721,6 +731,16 @@ func BenchmarkUnmarshal(b *testing.B) {
 			name:   "ArticleComplexDisableNameValidation",
 			data:   articleRelatedCommentsNestedWithIncludeBody,
 			target: ArticleRelated{},
+			opts:   []UnmarshalOption{UnmarshalSetNameValidation(DisableValidation)},
+		}, {
+			name:   "ArticlesComplex",
+			data:   articlesRelatedComplexBody,
+			target: []*ArticleRelated{},
+			opts:   nil,
+		}, {
+			name:   "ArticlesComplexDisableNameValidation",
+			data:   articlesRelatedComplexBody,
+			target: []*ArticleRelated{},
 			opts:   []UnmarshalOption{UnmarshalSetNameValidation(DisableValidation)},
 		},
 	}
