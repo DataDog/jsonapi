@@ -12,6 +12,7 @@ var (
 	// authors
 	authorA         = Author{ID: "1", Name: "A"}
 	authorAWithMeta = Author{ID: "1", Name: "A", Meta: map[string]any{"count": 10}}
+	authorBWithMeta = Author{ID: "2", Name: "B", Meta: map[string]any{"count": 10.0}}
 
 	// comments
 	commentA           = Comment{ID: "1", Body: "A"}
@@ -79,6 +80,50 @@ var (
 	articleRelatedCommentsArchived = ArticleRelated{ID: "1", Title: "A", Comments: []*Comment{&commentArchived}}
 	articleRelatedCommentsNested   = ArticleRelated{ID: "1", Title: "A", Comments: []*Comment{&commentAWithAuthor}}
 	articleRelatedComplete         = ArticleRelated{ID: "1", Title: "A", Author: &authorAWithMeta, Comments: commentsAB}
+	articlesRelatedComplex         = []*ArticleRelated{
+		{
+			ID:     "1",
+			Title:  "Bazel 101",
+			Author: &authorA,
+			Comments: []*Comment{
+				{ID: "11", Body: "Why is Bazel so slow on my computerr?", Archived: true, Author: &authorBWithMeta},
+				{ID: "12", Body: "Why is Bazel so slow on my computer?", Author: &authorBWithMeta},
+				{ID: "13", Body: "Just use an Apple M1", Author: &authorA},
+			},
+		}, {
+			ID:     "2",
+			Title:  "Why Should I Use JSON:API?",
+			Author: &authorBWithMeta,
+			Comments: []*Comment{
+				{ID: "21", Body: "I wish they changed the name...", Author: &authorBWithMeta},
+			},
+		}, {
+			ID:    "3",
+			Title: "Internal Test Article Created In Production For Some Reason",
+			Comments: []*Comment{
+				{ID: "31", Body: "test1"},
+				{ID: "32", Body: "test2"},
+			},
+		}, {
+			ID:     "4",
+			Title:  "How to Rewrite Everything in Rust",
+			Author: &authorA,
+		},
+	}
+	articlesRelatedComplexMarshalOptions = []MarshalOption{
+		MarshalJSONAPI(map[string]any{"meta_kind": "jsonapi meta"}),
+		MarshalMeta(map[string]any{"meta_kind": "document-level meta"}),
+		MarshalInclude(
+			authorA,
+			authorBWithMeta,
+			articlesRelatedComplex[0].Comments[0],
+			articlesRelatedComplex[0].Comments[1],
+			articlesRelatedComplex[0].Comments[2],
+			articlesRelatedComplex[1].Comments[0],
+			articlesRelatedComplex[2].Comments[0],
+			articlesRelatedComplex[2].Comments[1],
+		),
+	}
 
 	// articles with non-spec-conforming member names
 	authorWithInvalidTypeName                    = AuthorWithInvalidTypeName{ID: "1"}
@@ -126,6 +171,7 @@ var (
 	articleRelatedCompleteWithIncludeBody       = `{"data":{"id":"1","type":"articles","attributes":{"title":"A"},"relationships":{"author":{"data":{"id":"1","type":"author"}},"comments":{"data":[{"id":"1","type":"comments"},{"id":"2","type":"comments"}]}}},"included":[{"id":"1","type":"author","attributes":{"name":"A"}},{"id":"1","type":"comments","attributes":{"body":"A"}},{"id":"2","type":"comments","attributes":{"body":"B"}}]}`
 	articleRelatedCommentsNestedWithIncludeBody = `{"data":{"id":"1","type":"articles","attributes":{"title":"A"},"relationships":{"comments":{"data":[{"id":"1","type":"comments"}],"links":{"self":"http://example.com/articles/1/relationships/comments","related":"http://example.com/articles/1/comments"}}}},"included":[{"id":"1","type":"comments","attributes":{"body":"A"},"relationships":{"author":{"data":{"id":"1","type":"author"},"links":{"self":"http://example.com/comments/1/relationships/author","related":"http://example.com/comments/1/author"}}}},{"id":"1","type":"author","attributes":{"name":"A"}}]}`
 	articleWithIncludeOnlyBody                  = `{"data":{"id":"1","type":"articles","attributes":{"title":"A"}},"included":[{"id":"1","type":"author","attributes":{"name":"A"}}]}`
+	articlesRelatedComplexBody                  = `{"data":[{"id":"1","type":"articles","attributes":{"title":"Bazel 101"},"relationships":{"author":{"data":{"id":"1","type":"author"},"links":{"self":"http://example.com/articles/1/relationships/author","related":"http://example.com/articles/1/author"}},"comments":{"data":[{"id":"11","type":"comments"},{"id":"12","type":"comments"},{"id":"13","type":"comments"}],"links":{"self":"http://example.com/articles/1/relationships/comments","related":"http://example.com/articles/1/comments"}}}},{"id":"2","type":"articles","attributes":{"title":"Why Should I Use JSON:API?"},"relationships":{"author":{"data":{"id":"2","type":"author"},"meta":{"count":10},"links":{"self":"http://example.com/articles/2/relationships/author","related":"http://example.com/articles/2/author"}},"comments":{"data":[{"id":"21","type":"comments"}],"links":{"self":"http://example.com/articles/2/relationships/comments","related":"http://example.com/articles/2/comments"}}}},{"id":"3","type":"articles","attributes":{"title":"Internal Test Article Created In Production For Some Reason"},"relationships":{"comments":{"data":[{"id":"31","type":"comments"},{"id":"32","type":"comments"}],"links":{"self":"http://example.com/articles/3/relationships/comments","related":"http://example.com/articles/3/comments"}}}},{"id":"4","type":"articles","attributes":{"title":"How to Rewrite Everything in Rust"},"relationships":{"author":{"data":{"id":"1","type":"author"},"links":{"self":"http://example.com/articles/4/relationships/author","related":"http://example.com/articles/4/author"}}}}],"meta":{"meta_kind":"document-level meta"},"jsonapi":{"version":"1.0","meta":{"meta_kind":"jsonapi meta"}},"included":[{"id":"1","type":"author","attributes":{"name":"A"}},{"id":"2","type":"author","attributes":{"name":"B"},"meta":{"count":10}},{"id":"11","type":"comments","attributes":{"archived":true,"body":"Why is Bazel so slow on my computerr?"},"relationships":{"author":{"data":{"id":"2","type":"author"},"meta":{"count":10},"links":{"self":"http://example.com/comments/11/relationships/author","related":"http://example.com/comments/11/author"}}}},{"id":"12","type":"comments","attributes":{"body":"Why is Bazel so slow on my computer?"},"relationships":{"author":{"data":{"id":"2","type":"author"},"meta":{"count":10},"links":{"self":"http://example.com/comments/12/relationships/author","related":"http://example.com/comments/12/author"}}}},{"id":"13","type":"comments","attributes":{"body":"Just use an Apple M1"},"relationships":{"author":{"data":{"id":"1","type":"author"},"links":{"self":"http://example.com/comments/13/relationships/author","related":"http://example.com/comments/13/author"}}}},{"id":"21","type":"comments","attributes":{"body":"I wish they changed the name..."},"relationships":{"author":{"data":{"id":"2","type":"author"},"meta":{"count":10},"links":{"self":"http://example.com/comments/21/relationships/author","related":"http://example.com/comments/21/author"}}}},{"id":"31","type":"comments","attributes":{"body":"test1"}},{"id":"32","type":"comments","attributes":{"body":"test2"}}]}`
 
 	// articles with non-conforming member name bodies
 	authorWithInvalidTypeNameBody                           = `{"data":{"id":"1","type":"aut%hor"}}`

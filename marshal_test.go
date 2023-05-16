@@ -619,6 +619,12 @@ func TestMarshalRelationships(t *testing.T) {
 			marshalOptions: []MarshalOption{MarshalInclude(&commentAWithAuthor, &authorA)},
 			expect:         "",
 			expectError:    &PartialLinkageError{[]string{"{Type: comments, ID: 1}", "{Type: author, ID: 1}"}},
+		}, {
+			description:    "multiple complex with included authors and comments",
+			given:          &articlesRelatedComplex,
+			marshalOptions: articlesRelatedComplexMarshalOptions,
+			expect:         articlesRelatedComplexBody,
+			expectError:    nil,
 		},
 	}
 
@@ -794,6 +800,17 @@ func BenchmarkMarshal(b *testing.B) {
 				MarshalInclude(&commentAWithAuthor, &authorA),
 				MarshalDisableNameValidation(),
 			},
+		}, {
+			name:  "ArticlesComplex",
+			given: articlesRelatedComplex,
+			opts:  articlesRelatedComplexMarshalOptions,
+		}, {
+			name:  "ArticlesComplexDisableNameValidation",
+			given: articlesRelatedComplex,
+			opts: append(
+				[]MarshalOption{MarshalDisableNameValidation()},
+				articlesRelatedComplexMarshalOptions...,
+			),
 		},
 	}
 
