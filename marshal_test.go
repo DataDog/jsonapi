@@ -764,7 +764,7 @@ func TestMarshalMemberNameValidation(t *testing.T) {
 			_, err := Marshal(tc.given, opts...)
 			is.EqualError(t, tc.expectError, err)
 
-			opts = append(opts, MarshalDisableNameValidation())
+			opts = append(opts, MarshalSetNameValidation(DisableValidation))
 			_, err = Marshal(tc.given, opts...)
 			is.MustNoError(t, err)
 		})
@@ -798,7 +798,7 @@ func BenchmarkMarshal(b *testing.B) {
 			given: articleRelatedComments,
 			opts: []MarshalOption{
 				MarshalInclude(&commentAWithAuthor, &authorA),
-				MarshalDisableNameValidation(),
+				MarshalSetNameValidation(DisableValidation),
 			},
 		}, {
 			name:  "ArticlesComplex",
@@ -808,7 +808,7 @@ func BenchmarkMarshal(b *testing.B) {
 			name:  "ArticlesComplexDisableNameValidation",
 			given: articlesRelatedComplex,
 			opts: append(
-				[]MarshalOption{MarshalDisableNameValidation()},
+				[]MarshalOption{MarshalSetNameValidation(DisableValidation)},
 				articlesRelatedComplexMarshalOptions...,
 			),
 		},

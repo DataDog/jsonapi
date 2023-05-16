@@ -25,41 +25,42 @@ func init() {
 	strictNameRegex = regexp.MustCompile(`^([a-z]|[a-z]+((\d)|([A-Z\d][a-z\d]+))*([A-Z\d][a-z\d]*[a-z]))$`)
 }
 
-type memberNameValidationMode int
+// MemberNameValidationMode controls how document member names are checked for correctness.
+type MemberNameValidationMode int
 
 const (
-	// defaultValidation verifies that member names are valid according to the spec in
+	// DefaultValidation verifies that member names are valid according to the spec in
 	// https://jsonapi.org/format/#document-member-names.
 	//
 	// Note that this validation mode allows for non-URL-safe member names.
-	defaultValidation memberNameValidationMode = iota
+	DefaultValidation MemberNameValidationMode = iota
 
-	// disableValidation turns off member name validation for convenience and performance-saving
+	// DisableValidation turns off member name validation for convenience or performance-saving
 	// reasons.
 	//
-	// Note that this validation mode allows for member names to not conform to the JSON:API spec.
-	disableValidation
+	// Note that this validation mode allows member names that do NOT conform to the JSON:API spec.
+	DisableValidation
 
-	// strictValidation verifies that member names are both valid according to the spec in
+	// StrictValidation verifies that member names are valid according to the spec in
 	// https://jsonapi.org/format/#document-member-names, and follow recommendations from
 	// https://jsonapi.org/recommendations/#naming.
 	//
 	// Note that these names are always URL-safe.
-	strictValidation
+	StrictValidation
 )
 
-func isValidMemberName(name string, mode memberNameValidationMode) bool {
+func isValidMemberName(name string, mode MemberNameValidationMode) bool {
 	switch mode {
-	case disableValidation:
+	case DisableValidation:
 		return true
-	case strictValidation:
+	case StrictValidation:
 		return strictNameRegex.MatchString(name)
 	default:
 		return defaultNameRegex.MatchString(name)
 	}
 }
 
-func validateMapMemberNames(m map[string]any, mode memberNameValidationMode) error {
+func validateMapMemberNames(m map[string]any, mode MemberNameValidationMode) error {
 	for member, val := range m {
 		if !isValidMemberName(member, mode) {
 			return &MemberNameValidationError{member}
@@ -84,7 +85,7 @@ func validateMapMemberNames(m map[string]any, mode memberNameValidationMode) err
 	return nil
 }
 
-func validateJSONMemberNames(b []byte, mode memberNameValidationMode) error {
+func validateJSONMemberNames(b []byte, mode MemberNameValidationMode) error {
 	var m map[string]any
 	if err := json.Unmarshal(b, &m); err != nil {
 		return fmt.Errorf("unexpected unmarshal failure: %w", err)
