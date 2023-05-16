@@ -28,11 +28,14 @@ var (
 	// ErrMissingLinkFields indicates that a LinkObject is not valid.
 	ErrMissingLinkFields = errors.New("at least one of Links.Self or Links.Related must be set to a nonempty string or *LinkObject")
 
-	// ErrMissingDataField indicates that a *jsonapi.document is missing data in an invalid way
-	ErrMissingDataField = errors.New("document is missing a required top-level or relationship-level data member")
-
 	// ErrEmptyDataObject indicates that a primary or relationship data member is incorrectly represented by an empty JSON object {}
 	ErrEmptyDataObject = errors.New("resource \"data\" members may not be represented by an empty object {}")
+
+	// ErrDocumentMissingRequiredMembers indicates that a document does not have at least one required top-level member
+	ErrDocumentMissingRequiredMembers = errors.New("document is missing required top-level members; must have one of: \"data\", \"meta\", \"errors\"")
+
+	// ErrRelationshipMissingRequiredMembers indicates that a relationship does not have at least one required member
+	ErrRelationshipMissingRequiredMembers = errors.New("relationship is missing required top-level members; must have one of: \"data\", \"meta\", \"links\"")
 )
 
 // TypeError indicates that an unexpected type was encountered.
