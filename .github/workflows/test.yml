@@ -35,7 +35,7 @@ jobs:
       - name: store-current-benchmark
         uses: benchmark-action/github-action-benchmark@v1
         with:
-          name: idk
+          name: All Benchmarks
           tool: 'go'
           output-file-path: benchmarks.txt
           external-data-json-path: ./cache/benchmark-data.json
