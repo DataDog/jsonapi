@@ -22,7 +22,7 @@ func init() {
 	// - at least one lower case letter
 	// - camel case, and must end with a lower case letter
 	// - may have digits inside the word
-	strictNameRegex = regexp.MustCompile(`^([a-z]|[a-z]+((\d)|([A-Z\d][a-z\d]+))*([A-Z\d][a-z\d]*[a-z]))$`)
+	strictNameRegex = regexp.MustCompile(`^[a-z]+(|(\d|([A-Z\d][a-z\d]+))*([A-Z\d][a-z\d]*[a-z]))$`)
 }
 
 // MemberNameValidationMode controls how document member names are checked for correctness.

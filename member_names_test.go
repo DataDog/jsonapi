@@ -13,6 +13,7 @@ func TestIsValidMemberName(t *testing.T) {
 	testValidations := map[MemberNameValidationMode][]string{
 		StrictValidation: {
 			"a",
+			"lowercase",
 			"lowercase1with2numerals",
 			"camelCase",
 			"camel12Case9WithNumera1s",
