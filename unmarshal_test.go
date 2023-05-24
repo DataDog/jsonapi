@@ -299,7 +299,7 @@ func TestUnmarshal(t *testing.T) {
 			expect:      &ArticleRelated{},
 			expectError: ErrRelationshipMissingRequiredMembers,
 		}, {
-			// this test verifies that relationship data objects that are null or [] unmarshal
+			// verifies for empty relationship data: null -> nil and [] -> []Type{}
 			description: "*ArticleRelated empty relationships data (valid)",
 			given:       articleRelatedNoOmitEmptyBody,
 			do: func(body []byte) (any, error) {
@@ -307,7 +307,7 @@ func TestUnmarshal(t *testing.T) {
 				err := Unmarshal(body, &a)
 				return &a, err
 			},
-			expect:      &ArticleRelated{ID: "1", Title: "A"},
+			expect:      &ArticleRelated{ID: "1", Title: "A", Author: nil, Comments: []*Comment{}},
 			expectError: nil,
 		}, {
 			// this test verifies that empty relationship data objects do not unmarshal
