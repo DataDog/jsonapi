@@ -131,7 +131,7 @@ func unmarshalResourceObjects(ros []*resourceObject, v any, m *Unmarshaler) erro
 	}
 
 	// allocate an empty slice of the outType if there are no resource objects to unmarshal,
-	// because the main loop cannot construct run and construct one.
+	// because the main loop cannot construct one.
 	if len(ros) == 0 {
 		outValue = reflect.MakeSlice(outType, 0, 0)
 	}
@@ -253,8 +253,11 @@ func (ro *resourceObject) unmarshalFields(v any, m *Unmarshaler) error {
 				continue
 			}
 			relDocument, ok := ro.Relationships[name]
-			if !ok || relDocument.isEmpty() {
-				// relDocument has no relationship data, so there's nothing to do
+			if !ok {
+				continue
+			}
+			if !relDocument.hasMany && relDocument.isEmpty() {
+				// ensure struct field is nil for data:null cases only (we want empty slice for data:[])
 				continue
 			}
 
