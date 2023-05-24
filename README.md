@@ -6,7 +6,7 @@
 jsonapi
 -----
 
-Package jsonapi implements a marshaler/unmarshaler for [JSON:API v1.0](https://jsonapi.org/format/1.0).
+Package jsonapi implements a marshaler/unmarshaler for [JSON:API v1.1](https://jsonapi.org/format).
 
 # Version
 
