@@ -93,6 +93,9 @@ func (d *document) unmarshal(v any, m *Unmarshaler) (err error) {
 		if err != nil {
 			return
 		}
+	} else if d.Errors != nil {
+		// TODO(#36): Support unmarshaling of errors
+		return ErrErrorUnmarshalingNotImplemented
 	}
 
 	err = d.unmarshalOptionalFields(m)

@@ -36,6 +36,9 @@ var (
 
 	// ErrRelationshipMissingRequiredMembers indicates that a relationship does not have at least one required member
 	ErrRelationshipMissingRequiredMembers = errors.New("relationship is missing required top-level members; must have one of: \"data\", \"meta\", \"links\"")
+
+	// ErrErrorUnmarshalingNotImplemented indicates that an attempt was made to unmarshal an error document
+	ErrErrorUnmarshalingNotImplemented = errors.New("error unmarshaling is not implemented")
 )
 
 // TypeError indicates that an unexpected type was encountered.

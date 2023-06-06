@@ -435,6 +435,17 @@ func TestUnmarshal(t *testing.T) {
 			},
 			expect:      &articlesRelatedComplex,
 			expectError: nil,
+		}, {
+			// TODO(#36): Add unmarshaling of errors as a supported use-case
+			description: "Errors don't unmarshal",
+			given:       errorsSimpleStructBody,
+			do: func(body []byte) (any, error) {
+				var a Article
+				err := Unmarshal(body, &a)
+				return &a, err
+			},
+			expect:      &Article{},
+			expectError: ErrErrorUnmarshalingNotImplemented,
 		},
 	}
 
