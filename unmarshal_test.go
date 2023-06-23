@@ -200,6 +200,26 @@ func TestUnmarshal(t *testing.T) {
 			expect:      []*ArticleEncodingIntID{&articleAEncodingIntID, &articleBEncodingIntID},
 			expectError: nil,
 		}, {
+			description: "*ArticlePrivatePrimary",
+			given:       articleABody,
+			do: func(body []byte) (any, error) {
+				var a ArticlePrivatePrimary
+				err := Unmarshal(body, &a)
+				return &a, err
+			},
+			expect:      &articleAPrivatePrimary,
+			expectError: nil,
+		}, {
+			description: "*ArticleAnonymousPrimary",
+			given:       articleABody,
+			do: func(body []byte) (any, error) {
+				var a ArticleAnonymousPrimary
+				err := Unmarshal(body, &a)
+				return &a, err
+			},
+			expect:      &articleAAnonymousPrimary,
+			expectError: nil,
+		}, {
 			description: "*ArticleWithMeta",
 			given:       articleAWithMetaBody,
 			do: func(body []byte) (any, error) {

@@ -97,6 +97,16 @@ func TestMarshal(t *testing.T) {
 			expect:      articlesABBody,
 			expectError: nil,
 		}, {
+			description: "ArticlePrivatePriamry",
+			given:       &articleAPrivatePrimary,
+			expect:      articlesABBody,
+			expectError: nil,
+		}, {
+			description: "ArticleAnonymousPrimary",
+			given:       &articleAAnonymousPrimary,
+			expect:      articlesABBody,
+			expectError: nil,
+		}, {
 			description: "*ArticleLinked",
 			given:       &articleALinked,
 			expect:      articleALinkedBody,

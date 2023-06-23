@@ -41,6 +41,8 @@ var (
 			},
 		},
 	}
+	articleAPrivatePrimary                       = ArticlePrivatePrimary{id: "1", Title: "A"}
+	articleAAnonymousPrimary                     = ArticleAnonymousPrimary{"1", "A"}
 	articleALinked                               = ArticleLinked{ID: "1", Title: "A"}
 	articleLinkedOnlySelf                        = ArticleLinkedOnlySelf{ID: "1"}
 	articleLinkedInvalidSelf                     = ArticleLinkedInvalidSelf{ID: "1"}
@@ -230,6 +232,16 @@ type Article struct {
 
 	// Ignored is included to ensure un-tagged fields are ignored
 	Ignored string `json:"ignored"`
+}
+
+type ArticlePrivatePrimary struct {
+	id    string `jsonapi:"primary,articles"`
+	Title string `jsonapi:"attribute" json:"title"`
+}
+
+type ArticleAnonymousPrimary struct {
+	string `jsonapi:"primary,articles"`
+	Title  string `jsonapi:"attribute" json:"title"`
 }
 
 type ArticleMetrics struct {
