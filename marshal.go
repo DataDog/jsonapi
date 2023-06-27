@@ -328,8 +328,8 @@ func (d *document) makeResourceObject(v any, vt reflect.Type, m *Marshaler) (*re
 		// for each field in the struct we'll parse the jsonapi struct tag
 		// this will determine where it goes in the resource object (e.g. id,type,attributes,...)
 
-		f := field.v
-		ft := field.f
+		fv := field.fv
+		ft := field.ft
 
 		tag, err := parseJSONAPITag(ft)
 		if err != nil {
@@ -361,28 +361,28 @@ func (d *document) makeResourceObject(v any, vt reflect.Type, m *Marshaler) (*re
 				continue
 			}
 
-			if !f.CanInterface() {
+			if !fv.CanInterface() {
 				// while use of the unsafe package is generally discouraged, the following use-case
 				// is valid according to option 5 in the docs https://pkg.go.dev/unsafe#Pointer.
 				// This enables Marshaling of unexported/anonymous fields.
-				f = reflect.NewAt(f.Type(), unsafe.Pointer(f.UnsafeAddr())).Elem()
+				fv = reflect.NewAt(fv.Type(), unsafe.Pointer(fv.UnsafeAddr())).Elem()
 			}
 
-			fv := f.Interface() // FIXME panics normally
+			fvi := fv.Interface() // FIXME panics normally
 
-			if vs, ok := fv.(string); ok {
+			if vs, ok := fvi.(string); ok {
 				ro.ID = vs
 				foundPrimary = true
 				continue
 			}
 
-			if _, ok := fv.(fmt.Stringer); ok {
+			if _, ok := fvi.(fmt.Stringer); ok {
 				ro.ID = fmt.Sprintf("%s", fv)
 				foundPrimary = true
 				continue
 			}
 
-			if fvm, ok := fv.(encoding.TextMarshaler); ok {
+			if fvm, ok := fvi.(encoding.TextMarshaler); ok {
 				vb, err := fvm.MarshalText()
 				if err != nil {
 					return nil, err
@@ -402,17 +402,17 @@ func (d *document) makeResourceObject(v any, vt reflect.Type, m *Marshaler) (*re
 			if !ok {
 				continue
 			}
-			if f.IsZero() && omit {
+			if fv.IsZero() && omit {
 				continue
 			}
-			ro.Attributes[fieldName] = f.Interface()
+			ro.Attributes[fieldName] = fv.Interface()
 		case meta:
-			metaObject := f.Interface()
+			metaObject := fv.Interface()
 			if err := checkMeta(metaObject); err != nil {
 				return nil, err
 			}
 
-			if f.IsZero() {
+			if fv.IsZero() {
 				// ensure json omitempty works correctly with meta any type
 				metaObject = nil
 			}
@@ -432,7 +432,7 @@ func (d *document) makeResourceObject(v any, vt reflect.Type, m *Marshaler) (*re
 			if !ok {
 				continue
 			}
-			if f.IsZero() && omit {
+			if fv.IsZero() && omit {
 				continue
 			}
 
@@ -446,7 +446,7 @@ func (d *document) makeResourceObject(v any, vt reflect.Type, m *Marshaler) (*re
 			}
 
 			rm := m.relationshipMarshaler(link)
-			d, err := makeDocument(f.Interface(), rm, true)
+			d, err := makeDocument(fv.Interface(), rm, true)
 			if err != nil {
 				return nil, err
 			}
@@ -478,28 +478,28 @@ func (d *document) makeResourceObject(v any, vt reflect.Type, m *Marshaler) (*re
 }
 
 func getFlattenedFields(iface interface{}) []struct {
-	v reflect.Value
-	f reflect.StructField
+	fv reflect.Value
+	ft reflect.StructField
 } {
 	rv := derefValue(reflect.ValueOf(iface))
 	rt := reflect.TypeOf(rv.Interface())
 
 	fields := make([]struct {
-		v reflect.Value
-		f reflect.StructField
+		fv reflect.Value
+		ft reflect.StructField
 	}, 0)
 
 	for i := 0; i < rv.NumField(); i++ {
-		v := rv.Field(i)
-		f := rt.Field(i)
+		fv := rv.Field(i)
+		ft := rt.Field(i)
 
-		if f.Anonymous && (v.Kind() == reflect.Struct || v.Kind() == reflect.Pointer) {
-			fields = append(fields, getFlattenedFields(v.Interface())...)
+		if ft.Anonymous && (fv.Kind() == reflect.Struct || fv.Kind() == reflect.Pointer) {
+			fields = append(fields, getFlattenedFields(fv.Interface())...)
 		} else {
 			fields = append(fields, struct {
-				v reflect.Value
-				f reflect.StructField
-			}{v, f})
+				fv reflect.Value
+				ft reflect.StructField
+			}{fv, ft})
 		}
 	}
 
