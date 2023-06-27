@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"regexp"
 	"strings"
+	"unsafe"
 )
 
 var fieldsQueryRegex *regexp.Regexp
@@ -360,7 +361,14 @@ func (d *document) makeResourceObject(v any, vt reflect.Type, m *Marshaler) (*re
 				continue
 			}
 
-			fv := f.Interface()
+			if !f.CanInterface() {
+				// while use of the unsafe package is generally discouraged, the following use-case
+				// is valid according to option 5 in the docs https://pkg.go.dev/unsafe#Pointer.
+				// This enables Marshaling of unexported/anonymous fields.
+				f = reflect.NewAt(f.Type(), unsafe.Pointer(f.UnsafeAddr())).Elem()
+			}
+
+			fv := f.Interface() // FIXME panics normally
 
 			if vs, ok := fv.(string); ok {
 				ro.ID = vs

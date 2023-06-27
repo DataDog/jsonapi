@@ -4,6 +4,7 @@ import (
 	"encoding"
 	"encoding/json"
 	"reflect"
+	"unsafe"
 )
 
 // Unmarshaler is configured internally via UnmarshalOption's passed to Unmarshal.
@@ -230,6 +231,12 @@ func (ro *resourceObject) unmarshalFields(v any, m *Unmarshaler) error {
 			var fvi any
 			switch fv.CanAddr() {
 			case true:
+				if !fv.CanInterface() {
+					// while use of the unsafe package is generally discouraged, the following use-case
+					// is valid according to option 5 in the docs https://pkg.go.dev/unsafe#Pointer.
+					// This enables Unmarshaling of unexported/anonymous fields.
+					fv = reflect.NewAt(fv.Type(), unsafe.Pointer(fv.UnsafeAddr())).Elem()
+				}
 				fvi = fv.Addr().Interface()
 			default:
 				fvi = fv.Interface()
