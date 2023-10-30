@@ -817,6 +817,7 @@ func BenchmarkMarshal(b *testing.B) {
 	for _, bm := range benchmarks {
 		bm := bm
 		b.Run(bm.name, func(b *testing.B) {
+			b.ReportAllocs()
 			for n := 0; n < b.N; n++ {
 				_, _ = Marshal(bm.given, bm.opts...)
 			}
