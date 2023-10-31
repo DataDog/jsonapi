@@ -97,18 +97,3 @@ func validateJSONMemberNames(b []byte, mode MemberNameValidationMode) error {
 	}
 	return validateMapMemberNames(m, mode)
 }
-
-// func validateJSONMemberNames2(b []byte, mode MemberNameValidationMode) error {
-// 	// do not unmarshal if validation is disabled
-// 	if mode == DisableValidation {
-// 		return nil
-// 	}
-
-// 	decoder := json.NewDecoder(bytes.NewReader(b))
-// 	decoder.Token()
-// 	var m map[string]any
-// 	if err := json.Unmarshal(b, &m); err != nil {
-// 		return fmt.Errorf("unexpected unmarshal failure: %w", err)
-// 	}
-// 	return validateMapMemberNames(m, mode)
-// }
