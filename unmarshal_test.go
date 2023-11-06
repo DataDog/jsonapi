@@ -791,6 +791,7 @@ func BenchmarkUnmarshal(b *testing.B) {
 		bm := bm
 		data := []byte(bm.data)
 		b.Run(bm.name, func(b *testing.B) {
+			b.ReportAllocs()
 			for n := 0; n < b.N; n++ {
 				_ = Unmarshal(data, &bm.target, bm.opts...)
 			}
