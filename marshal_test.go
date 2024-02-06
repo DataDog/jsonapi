@@ -650,6 +650,8 @@ func TestMarshalRelationships(t *testing.T) {
 func TestMarshalClientMode(t *testing.T) {
 	t.Parallel()
 
+	articleNoIDRelatedComplexBody := `{"data":{"type":"articles","attributes":{"title":"Bazel 101"},"relationships":{"author":{"data":{"id":"1","type":"author"},"links":{"self":"http://example.com/articles//relationships/author","related":"http://example.com/articles//author"}},"comments":{"data":[{"type":"comments"},{"type":"comments"},{"type":"comments"}],"links":{"self":"http://example.com/articles//relationships/comments","related":"http://example.com/articles//comments"}}}}}`
+
 	tests := []struct {
 		description string
 		given       any
@@ -659,6 +661,19 @@ func TestMarshalClientMode(t *testing.T) {
 			description: "empty primary field",
 			given:       &Article{ID: "", Title: "A"},
 			expect:      articleANoIDBody,
+		},
+		{
+			description: "empty primary field with relationships",
+			given: &ArticleRelated{
+				Title:  "Bazel 101",
+				Author: &authorA,
+				Comments: []*Comment{
+					{Body: "Why is Bazel so slow on my computerr?", Archived: true, Author: &authorBWithMeta},
+					{Body: "Why is Bazel so slow on my computer?", Author: &authorBWithMeta},
+					{Body: "Just use an Apple M1", Author: &authorA},
+				},
+			},
+			expect: articleNoIDRelatedComplexBody,
 		},
 	}
 

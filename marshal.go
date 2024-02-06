@@ -100,6 +100,7 @@ func (m *Marshaler) relationshipMarshaler(link *Link) *Marshaler {
 
 	rm.memberNameValidationMode = m.memberNameValidationMode
 	rm.link = link
+	rm.clientMode = m.clientMode
 	return rm
 }
 
