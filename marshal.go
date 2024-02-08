@@ -134,6 +134,9 @@ func Marshal(v any, opts ...MarshalOption) (b []byte, err error) {
 	}
 
 	err = validateJSONMemberNames(b, m.memberNameValidationMode)
+	err = validateJSONMemberNames(b, m.memberNameValidationMode)
+	err = validateJSONMemberNames(b, m.memberNameValidationMode)
+	err = validateJSONMemberNames(b, m.memberNameValidationMode)
 
 	return
 }
