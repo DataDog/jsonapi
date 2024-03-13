@@ -15,11 +15,16 @@ var (
 	authorBWithMeta = Author{ID: "2", Name: "B", Meta: map[string]any{"count": 10.0}}
 
 	// comments
-	commentA           = Comment{ID: "1", Body: "A"}
-	commentB           = Comment{ID: "2", Body: "B"}
-	commentAWithAuthor = Comment{ID: "1", Body: "A", Author: &authorA}
-	commentArchived    = Comment{ID: "1", Body: "A", Archived: true}
-	commentsAB         = []*Comment{&commentA, &commentB}
+	commentA              = Comment{ID: "1", Body: "A"}
+	commentB              = Comment{ID: "2", Body: "B"}
+	commentAWithAuthor    = Comment{ID: "1", Body: "A", Author: &authorA}
+	commentArchived       = Comment{ID: "1", Body: "A", Archived: true}
+	commentsAB            = []*Comment{&commentA, &commentB}
+	commentEmbeddedFields = CommentFields{Body: "A", Author: Author{ID: "1"}}
+	commentEmbedded       = CommentEmbedded{ID: "1", CommentFields: commentEmbeddedFields}
+
+	commentEmbeddedFieldsPointer = CommentFieldsPointer{Body: "A", Author: &Author{ID: "1"}}
+	commentEmbeddedPointer       = CommentEmbeddedPointer{ID: "1", CommentFieldsPointer: commentEmbeddedFieldsPointer}
 
 	// articles
 	articleA        = Article{ID: "1", Title: "A"}
@@ -157,6 +162,7 @@ var (
 	articleNullWithToplevelMetaBody       = `{"data":null,"meta":{"foo":"bar"}}`
 	articleEmptyArrayWithToplevelMetaBody = `{"data":[],"meta":{"foo":"bar"}}`
 	articleEmbeddedBody                   = `{"data":{"type":"articles","id":"1","attributes":{"title":"A","lastModified":"1989-06-15T00:00:00Z"}}}`
+	commentEmbeddedBody                   = `{"data":{"id":"1","type":"comments","attributes":{"body":"A"},"relationships":{"author":{"data":{"id":"1","type":"author"}}}}}`
 
 	// articles with relationships bodies
 	articleRelatedInvalidEmptyRelationshipBody  = `{"data":{"id":"1","type":"articles","attributes":{"title":"A"},"relationships":{"author":{}}}}`
@@ -452,6 +458,28 @@ type ArticleDoubleID struct {
 
 type Metadata struct {
 	LastModified time.Time `jsonapi:"attribute" json:"lastModified"`
+}
+
+type CommentFields struct {
+	Body     string `jsonapi:"attribute" json:"body"`
+	Archived bool   `jsonapi:"attribute" json:"archived,omitempty"`
+	Author   Author `jsonapi:"relationship" json:"author,omitempty"`
+}
+
+type CommentFieldsPointer struct {
+	Body     string  `jsonapi:"attribute" json:"body"`
+	Archived bool    `jsonapi:"attribute" json:"archived,omitempty"`
+	Author   *Author `jsonapi:"relationship" json:"author,omitempty"`
+}
+
+type CommentEmbedded struct {
+	ID string `jsonapi:"primary,comments"`
+	CommentFields
+}
+
+type CommentEmbeddedPointer struct {
+	ID string `jsonapi:"primary,comments"`
+	CommentFieldsPointer
 }
 
 type ArticleEmbedded struct {
