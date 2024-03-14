@@ -298,6 +298,10 @@ func (ro *resourceObject) unmarshalFields(v any, rv reflect.Value, rt reflect.Ty
 }
 
 func (ro *resourceObject) unmarshalAttributes(v any) error {
+	if len(ro.Attributes) == 0 {
+		return nil
+	}
+
 	b, err := json.Marshal(ro.Attributes)
 	if err != nil {
 		return err
