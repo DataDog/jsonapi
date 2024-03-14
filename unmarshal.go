@@ -170,7 +170,9 @@ func (ro *resourceObject) unmarshal(v any, m *Unmarshaler) error {
 		return &TypeError{Actual: vt.String(), Expected: []string{"struct"}}
 	}
 
-	if err := ro.unmarshalFields(v, m); err != nil {
+	rv := derefValue(reflect.ValueOf(v))
+	rt := reflect.TypeOf(rv.Interface())
+	if err := ro.unmarshalFields(v, rv, rt, m); err != nil {
 		return err
 	}
 
@@ -178,10 +180,8 @@ func (ro *resourceObject) unmarshal(v any, m *Unmarshaler) error {
 }
 
 // unmarshalFields unmarshals a resource object into all non-attribute struct fields
-func (ro *resourceObject) unmarshalFields(v any, m *Unmarshaler) error {
+func (ro *resourceObject) unmarshalFields(v any, rv reflect.Value, rt reflect.Type, m *Unmarshaler) error {
 	setPrimary := false
-	rv := derefValue(reflect.ValueOf(v))
-	rt := reflect.TypeOf(rv.Interface())
 
 	for i := 0; i < rv.NumField(); i++ {
 		fv := rv.Field(i)
@@ -192,6 +192,11 @@ func (ro *resourceObject) unmarshalFields(v any, m *Unmarshaler) error {
 			return err
 		}
 		if jsonapiTag == nil {
+			if ft.Anonymous && fv.Kind() == reflect.Struct {
+				if err := ro.unmarshalFields(v, fv, reflect.TypeOf(fv.Interface()), m); err != nil {
+					return err
+				}
+			}
 			continue
 		}
 

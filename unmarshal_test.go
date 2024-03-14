@@ -446,6 +446,27 @@ func TestUnmarshal(t *testing.T) {
 			},
 			expect:      &Article{},
 			expectError: ErrErrorUnmarshalingNotImplemented,
+		}, {
+			description: "CommentEmbedded",
+			given:       commentEmbeddedBody,
+			do: func(body []byte) (any, error) {
+				var a CommentEmbedded
+				err := Unmarshal(body, &a)
+				return &a, err
+			},
+			expect:      &commentEmbedded,
+			expectError: nil,
+		},
+		{
+			description: "CommentEmbeddedPointer",
+			given:       commentEmbeddedBody,
+			do: func(body []byte) (any, error) {
+				var a CommentEmbeddedPointer
+				err := Unmarshal(body, &a)
+				return &a, err
+			},
+			expect:      &commentEmbeddedPointer,
+			expectError: nil,
 		},
 		{
 			description: "ArticleLinkedOnlySelf",
