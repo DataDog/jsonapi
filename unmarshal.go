@@ -191,16 +191,12 @@ func (ro *resourceObject) unmarshalFields(v any, rv reflect.Value, rt reflect.Ty
 		if err != nil {
 			return err
 		}
-		// If there is an embedded struct we want to process the fields in that struct recursively
-		// only if there isn't a relationship defined on the field.
-		if fv.Kind() == reflect.Struct && jsonapiTag == nil {
-			if err := ro.unmarshalFields(v, fv, reflect.TypeOf(fv.Interface()), m); err != nil {
-				return err
-			}
-			continue
-		}
-
 		if jsonapiTag == nil {
+			if ft.Anonymous && fv.Kind() == reflect.Struct {
+				if err := ro.unmarshalFields(v, fv, reflect.TypeOf(fv.Interface()), m); err != nil {
+					return err
+				}
+			}
 			continue
 		}
 
