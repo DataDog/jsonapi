@@ -447,6 +447,28 @@ func TestUnmarshal(t *testing.T) {
 			expect:      &Article{},
 			expectError: ErrErrorUnmarshalingNotImplemented,
 		},
+		{
+			description: "ArticleLinkedOnlySelf",
+			given:       articleLinkedOnlySelfBody,
+			do: func(body []byte) (any, error) {
+				var a ArticleLinkedOnlySelf
+				err := Unmarshal(body, &a)
+				return &a, err
+			},
+			expect:      &articleLinkedOnlySelf,
+			expectError: nil,
+		},
+		{
+			description: "*ArticleLinkedOnlySelf",
+			given:       articleLinkedOnlySelfBody,
+			do: func(body []byte) (any, error) {
+				var a *ArticleLinkedOnlySelf
+				err := Unmarshal(body, &a)
+				return a, err
+			},
+			expect:      &articleLinkedOnlySelf,
+			expectError: nil,
+		},
 	}
 
 	for i, tc := range tests {
