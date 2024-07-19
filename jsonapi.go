@@ -143,7 +143,7 @@ type document struct {
 	// JSONAPI is a JSON:API object as defined by https://jsonapi.org/format/1.0/#document-jsonapi-object.
 	JSONAPI *jsonAPI `json:"jsonapi,omitempty"`
 
-	// Errors is a list of JSON:API error objects as defined by https://jsonapi.org/format/1.0/#error-objects.
+	// Errors is a list of JSON:API error objects as defined by https://jsonapi.org/format/1.1/#error-objects.
 	Errors []*Error `json:"errors,omitempty"`
 
 	// Links is the top-level links object as defined by https://jsonapi.org/format/1.0/#document-top-level.

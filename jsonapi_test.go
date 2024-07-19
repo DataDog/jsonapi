@@ -198,12 +198,12 @@ var (
 	errorsSimpleSliceSinglePtr = []*Error{&errorsSimpleStruct}
 	errorsComplexStruct        = Error{ //nolint: errname
 		ID:     "1",
-		Links:  &ErrorLink{About: "A"},
+		Links:  &ErrorLink{About: "A", Type: "TY"},
 		Status: Status(http.StatusInternalServerError),
 		Code:   "C",
 		Title:  "T",
 		Detail: "D",
-		Source: &ErrorSource{Pointer: "PO", Parameter: "PA"},
+		Source: &ErrorSource{Pointer: "PO", Parameter: "PA", Header: "H"},
 		Meta:   map[string]string{"K": "V"},
 	}
 	errorsComplexSliceMany    = []Error{errorsSimpleStruct, errorsComplexStruct}
@@ -225,8 +225,8 @@ var (
 
 	// error bodies
 	errorsSimpleStructBody     = `{"errors":[{"title":"T"}]}`
-	errorsComplexStructBody    = `{"errors":[{"id":"1","links":{"about":"A"},"status":"500","code":"C","title":"T","detail":"D","source":{"pointer":"PO","parameter":"PA"},"meta":{"K":"V"}}]}`
-	errorsComplexSliceManyBody = `{"errors":[{"title":"T"},{"id":"1","links":{"about":"A"},"status":"500","code":"C","title":"T","detail":"D","source":{"pointer":"PO","parameter":"PA"},"meta":{"K":"V"}}]}`
+	errorsComplexStructBody    = `{"errors":[{"id":"1","links":{"about":"A","type":"TY"},"status":"500","code":"C","title":"T","detail":"D","source":{"pointer":"PO","parameter":"PA","header":"H"},"meta":{"K":"V"}}]}`
+	errorsComplexSliceManyBody = `{"errors":[{"title":"T"},{"id":"1","links":{"about":"A","type":"TY"},"status":"500","code":"C","title":"T","detail":"D","source":{"pointer":"PO","parameter":"PA","header":"H"},"meta":{"K":"V"}}]}`
 	errorsWithLinkObjectBody   = `{"errors":[{"links":{"about":{"href":"A","meta":{"key_i":420,"key_s":"B"}}}}]}`
 )
 
