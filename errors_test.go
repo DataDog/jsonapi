@@ -10,7 +10,7 @@ import (
 func TestErrorMarshalUnmarshal(t *testing.T) {
 	t.Parallel()
 
-	expected := []byte(`{"id":"1","links":{"about":"A","type":TY"},"status":"500","code":"C","title":"T","detail":"D","source":{"pointer":"PO","parameter":"PA","header":"H"},"meta":{"K":"V"}}`)
+	expected := []byte(`{"id":"1","links":{"about":"A","type":"TY"},"status":"500","code":"C","title":"T","detail":"D","source":{"pointer":"PO","parameter":"PA","header":"H"},"meta":{"K":"V"}}`)
 
 	var e Error
 	err := json.Unmarshal(expected, &e)
