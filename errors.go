@@ -91,15 +91,17 @@ func (e *MemberNameValidationError) Error() string {
 	return fmt.Sprintf("invalid member name: %s", e.MemberName)
 }
 
-// ErrorLink represents a JSON:API error links object as defined by https://jsonapi.org/format/1.0/#error-objects.
+// ErrorLink represents a JSON:API error links object as defined by https://jsonapi.org/format/1.1/#error-objects.
 type ErrorLink struct {
 	About any `json:"about,omitempty"`
+	Type  any `json:"type,omitempty"`
 }
 
-// ErrorSource represents a JSON:API Error.Source as defined by https://jsonapi.org/format/1.0/#error-objects.
+// ErrorSource represents a JSON:API Error.Source as defined by https://jsonapi.org/format/1.1/#error-objects.
 type ErrorSource struct {
 	Pointer   string `json:"pointer,omitempty"`
 	Parameter string `json:"parameter,omitempty"`
+	Header    string `json:"header,omitempty"`
 }
 
 // Status provides a helper for setting an Error.Status value.
@@ -107,7 +109,7 @@ func Status(s int) *int {
 	return &s
 }
 
-// Error represents a JSON:API error object as defined by https://jsonapi.org/format/1.0/#error-objects.
+// Error represents a JSON:API error object as defined by https://jsonapi.org/format/1.1/#error-objects.
 type Error struct {
 	ID     string       `json:"id,omitempty"`
 	Links  *ErrorLink   `json:"links,omitempty"`
