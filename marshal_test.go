@@ -489,7 +489,7 @@ func TestMarshalFields(t *testing.T) {
 	}{
 		{
 			description: "no fields filter",
-			setQuery:    func(q url.Values) {},
+			setQuery:    func(_ url.Values) {},
 			expect:      articleCompleteBody,
 		}, {
 			description: "single fields filter (invalid field)",
