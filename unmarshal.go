@@ -10,7 +10,9 @@ import (
 // It's used to configure the Unmarshaling by decoding optional fields like Meta.
 type Unmarshaler struct {
 	unmarshalMeta            bool
+	unmarshalLinks           bool
 	meta                     any
+	links                    *Link
 	memberNameValidationMode MemberNameValidationMode
 }
 
@@ -22,6 +24,14 @@ func UnmarshalMeta(meta any) UnmarshalOption {
 	return func(m *Unmarshaler) {
 		m.unmarshalMeta = true
 		m.meta = meta
+	}
+}
+
+// UnmarshalLinks copies the Document.Links into the given link.
+func UnmarshalLinks(link *Link) UnmarshalOption {
+	return func(m *Unmarshaler) {
+		m.unmarshalLinks = true
+		m.links = link
 	}
 }
 
@@ -101,7 +111,6 @@ func (d *document) unmarshal(v any, m *Unmarshaler) (err error) {
 	err = d.unmarshalOptionalFields(m)
 
 	return
-
 }
 
 func (d *document) unmarshalOptionalFields(m *Unmarshaler) error {
@@ -119,6 +128,11 @@ func (d *document) unmarshalOptionalFields(m *Unmarshaler) error {
 		}
 		if err := validateJSONMemberNames(b, m.memberNameValidationMode); err != nil {
 			return err
+		}
+	}
+	if m.unmarshalLinks {
+		if d.Links != nil {
+			*m.links = *d.Links
 		}
 	}
 	return nil

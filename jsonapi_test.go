@@ -163,6 +163,8 @@ var (
 	articleEmptyArrayWithToplevelMetaBody = `{"data":[],"meta":{"foo":"bar"}}`
 	articleEmbeddedBody                   = `{"data":{"type":"articles","id":"1","attributes":{"title":"A","lastModified":"1989-06-15T00:00:00Z"}}}`
 	commentEmbeddedBody                   = `{"data":{"id":"1","type":"comments","attributes":{"body":"A"},"relationships":{"author":{"data":{"id":"1","type":"author"}}}}}`
+	articleAWithTopLevelLink              = `{"data":{"id":"1","type":"articles","attributes":{"title":"A"}},"links":{"self":"http://example.com/article/1"}}`
+	articleAWithTopLevelLinksRelated      = `{"data":{"id":"1","type":"articles","attributes":{"title":"A"}},"links":{"related":{"href":"http://example.com/article/1/comments","meta":{"foo":"bar"}}}}`
 
 	// articles with relationships bodies
 	articleRelatedInvalidEmptyRelationshipBody  = `{"data":{"id":"1","type":"articles","attributes":{"title":"A"},"relationships":{"author":{}}}}`

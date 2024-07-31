@@ -634,6 +634,75 @@ func TestUnmarshalMeta(t *testing.T) {
 	}
 }
 
+func TestUnmarshalLinks(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		description string
+		do          func() (*Link, error)
+		expected    *Link
+	}{
+		{
+			description: "null",
+			do: func() (*Link, error) {
+				var (
+					a []Article
+					l Link
+				)
+				err := Unmarshal([]byte(articlesABBody), &a, UnmarshalLinks(&l))
+				return &l, err
+			},
+			expected: &Link{},
+		},
+		{
+			description: "*Link",
+			do: func() (*Link, error) {
+				var (
+					a Article
+					l Link
+				)
+				err := Unmarshal([]byte(articleAWithTopLevelLink), &a, UnmarshalLinks(&l))
+				return &l, err
+			},
+			expected: &Link{
+				Self: "http://example.com/article/1",
+			},
+		},
+		{
+			description: "*Link with related(any) and meta(any)",
+			do: func() (*Link, error) {
+				var (
+					a Article
+					l Link
+				)
+				err := Unmarshal([]byte(articleAWithTopLevelLinksRelated), &a, UnmarshalLinks(&l))
+				return &l, err
+			},
+			expected: &Link{
+				Related: map[string]interface{}{
+					"href": "http://example.com/article/1/comments",
+					"meta": map[string]interface{}{
+						"foo": "bar",
+					},
+				},
+			},
+		},
+	}
+
+	for i, tc := range tests {
+		tc := tc
+
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			t.Parallel()
+			t.Log(tc.description)
+
+			actual, err := tc.do()
+			is.NoError(t, err)
+			is.Equal(t, tc.expected, actual)
+		})
+	}
+}
+
 // TestUnmarshalMemberNameValidation collects tests which verify that invalid member names are
 // caught during unmarshaling, no matter where they're placed. This test does not exhaustively test
 // every possible invalid name.
