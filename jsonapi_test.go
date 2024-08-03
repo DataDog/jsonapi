@@ -31,6 +31,7 @@ var (
 	articleANoID    = Article{Title: "A"}
 	articleB        = Article{ID: "2", Title: "B"}
 	articlesAB      = []Article{articleA, articleB}
+	articlesAA      = []Article{articleA, articleA}
 	articlesABPtr   = []*Article{&articleA, &articleB}
 	articleComplete = ArticleComplete{
 		ID:       "1",
@@ -77,15 +78,16 @@ var (
 	articleWithoutResourceObjectMeta = ArticleWithResourceObjectMeta{ID: "1", Title: "A"}
 
 	// articles with relationships
-	articleRelated                 = ArticleRelated{ID: "1", Title: "A"}
-	articleRelatedNoOmitEmpty      = ArticleRelatedNoOmitEmpty{ID: "1", Title: "A"}
-	articleRelatedAuthor           = ArticleRelated{ID: "1", Title: "A", Author: &authorA}
-	articleRelatedAuthorWithMeta   = ArticleRelated{ID: "1", Title: "A", Author: &authorAWithMeta}
-	articleRelatedComments         = ArticleRelated{ID: "1", Title: "A", Comments: []*Comment{&commentA}}
-	articleRelatedCommentsArchived = ArticleRelated{ID: "1", Title: "A", Comments: []*Comment{&commentArchived}}
-	articleRelatedCommentsNested   = ArticleRelated{ID: "1", Title: "A", Comments: []*Comment{&commentAWithAuthor}}
-	articleRelatedComplete         = ArticleRelated{ID: "1", Title: "A", Author: &authorAWithMeta, Comments: commentsAB}
-	articlesRelatedComplex         = []*ArticleRelated{
+	articleRelated                  = ArticleRelated{ID: "1", Title: "A"}
+	articleRelatedNoOmitEmpty       = ArticleRelatedNoOmitEmpty{ID: "1", Title: "A"}
+	articleRelatedAuthor            = ArticleRelated{ID: "1", Title: "A", Author: &authorA}
+	articleRelatedAuthorWithMeta    = ArticleRelated{ID: "1", Title: "A", Author: &authorAWithMeta}
+	articleRelatedComments          = ArticleRelated{ID: "1", Title: "A", Comments: []*Comment{&commentA}}
+	articleRelatedNonuniqueComments = ArticleRelated{ID: "1", Title: "A", Comments: []*Comment{&commentA, &commentA}}
+	articleRelatedCommentsArchived  = ArticleRelated{ID: "1", Title: "A", Comments: []*Comment{&commentArchived}}
+	articleRelatedCommentsNested    = ArticleRelated{ID: "1", Title: "A", Comments: []*Comment{&commentAWithAuthor}}
+	articleRelatedComplete          = ArticleRelated{ID: "1", Title: "A", Author: &authorAWithMeta, Comments: commentsAB}
+	articlesRelatedComplex          = []*ArticleRelated{
 		{
 			ID:     "1",
 			Title:  "Bazel 101",
@@ -153,6 +155,7 @@ var (
 	articleOmitTitleFullBody              = `{"data":{"type":"articles","id":"1"}}`
 	articleOmitTitlePartialBody           = `{"data":{"type":"articles","id":"1","attributes":{"subtitle":"A"}}}`
 	articlesABBody                        = `{"data":[{"type":"articles","id":"1","attributes":{"title":"A"}},{"type":"articles","id":"2","attributes":{"title":"B"}}]}`
+	articlesABNonuniqueData               = `{"data":[{"type":"articles","id":"1","attributes":{"title":"A"}},{"type":"articles","id":"1","attributes":{"title":"B"}}]}`
 	articleCompleteBody                   = `{"data":{"id":"1","type":"articles","attributes":{"info":{"publishDate":"1989-06-15T00:00:00Z","tags":["a","b"],"isPublic":true,"metrics":{"views":10,"reads":4}},"title":"A","subtitle":"AA"}}}`
 	articleALinkedBody                    = `{"data":{"id":"1","type":"articles","attributes":{"title":"A"},"links":{"self":"https://example.com/articles/1","related":{"href":"https://example.com/articles/1/comments","meta":{"count":10}}}}}`
 	articleLinkedOnlySelfBody             = `{"data":{"id":"1","type":"articles","links":{"self":"https://example.com/articles/1"}}}`
@@ -178,6 +181,7 @@ var (
 	articleRelatedCommentsWithIncludeBody       = `{"data":{"id":"1","type":"articles","attributes":{"title":"A"},"relationships":{"comments":{"data":[{"id":"1","type":"comments"}],"links":{"self":"http://example.com/articles/1/relationships/comments","related":"http://example.com/articles/1/comments"}}}},"included":[{"id":"1","type":"comments","attributes":{"body":"A"},"relationships":{"author":{"data":{"id":"1","type":"author"},"links":{"self":"http://example.com/comments/1/relationships/author","related":"http://example.com/comments/1/author"}}}}]}`
 	articleRelatedCompleteBody                  = `{"data":{"id":"1","type":"articles","attributes":{"title":"A"},"relationships":{"author":{"data":{"id":"1","type":"author"},"meta":{"count":10},"links":{"self":"http://example.com/articles/1/relationships/author","related":"http://example.com/articles/1/author"}},"comments":{"data":[{"id":"1","type":"comments"},{"id":"2","type":"comments"}],"links":{"self":"http://example.com/articles/1/relationships/comments","related":"http://example.com/articles/1/comments"}}}}}`
 	articleRelatedCompleteWithIncludeBody       = `{"data":{"id":"1","type":"articles","attributes":{"title":"A"},"relationships":{"author":{"data":{"id":"1","type":"author"}},"comments":{"data":[{"id":"1","type":"comments"},{"id":"2","type":"comments"}]}}},"included":[{"id":"1","type":"author","attributes":{"name":"A"}},{"id":"1","type":"comments","attributes":{"body":"A"}},{"id":"2","type":"comments","attributes":{"body":"B"}}]}`
+	articleRelatedNonuniqueLinkage              = `{"data":{"id":"1","type":"articles","attributes":{"title":"A"},"relationships":{"author":{"data":{"id":"1","type":"author"}},"comments":{"data":[{"id":"1","type":"comments"},{"id":"1","type":"comments"}]}}}}`
 	articleRelatedCommentsNestedWithIncludeBody = `{"data":{"id":"1","type":"articles","attributes":{"title":"A"},"relationships":{"comments":{"data":[{"id":"1","type":"comments"}],"links":{"self":"http://example.com/articles/1/relationships/comments","related":"http://example.com/articles/1/comments"}}}},"included":[{"id":"1","type":"comments","attributes":{"body":"A"},"relationships":{"author":{"data":{"id":"1","type":"author"},"links":{"self":"http://example.com/comments/1/relationships/author","related":"http://example.com/comments/1/author"}}}},{"id":"1","type":"author","attributes":{"name":"A"}}]}`
 	articleWithIncludeOnlyBody                  = `{"data":{"id":"1","type":"articles","attributes":{"title":"A"}},"included":[{"id":"1","type":"author","attributes":{"name":"A"}}]}`
 	articleRelatedAuthorLinksOnlyBody           = `{"data":{"id":"1","type":"articles","attributes":{"title":"A"},"relationships":{"author":{"links":{"self":"http://example.com/articles/1/relationships/author","related":"http://example.com/articles/1/author"}}}}}`
