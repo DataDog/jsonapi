@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
-	"slices"
 )
 
 // ResourceObject is a JSON:API resource object as defined by https://jsonapi.org/format/1.0/#document-resource-objects
@@ -330,7 +329,7 @@ func (d *document) verifyFullLinkage(aliasRelationships bool) error {
 func (d *document) verifyResourceUniqueness() bool {
 	topLevelSeen := make(map[string]struct{})
 
-	for _, ro := range slices.Concat(d.getResourceObjectSlice(), d.Included) {
+	for _, ro := range append(d.getResourceObjectSlice(), d.Included...) {
 		rid := ro.getIdentifier()
 		if _, ok := topLevelSeen[rid]; ro.ID != "" && ok {
 			return false
