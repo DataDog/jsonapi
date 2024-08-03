@@ -205,6 +205,9 @@ func makeDocument(v any, m *Marshaler, isRelationship bool) (*document, error) {
 		d.Included = append(d.Included, ro)
 	}
 
+	if ok := d.verifyResourceUniqueness(); !ok {
+		return nil, ErrNonuniqueResource
+	}
 	// if we got any included data, verify full-linkage of this compound document.
 	if err := d.verifyFullLinkage(false); err != nil {
 		return nil, err
