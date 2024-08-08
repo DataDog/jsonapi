@@ -70,6 +70,16 @@ func TestUnmarshal(t *testing.T) {
 			expect:      []Article{articleA, articleB},
 			expectError: nil,
 		}, {
+			description: "[]Article (nonunique data)",
+			given:       articlesABNonuniqueData,
+			do: func(body []byte) (any, error) {
+				var a []Article
+				err := Unmarshal(body, &a)
+				return a, err
+			},
+			expect:      ([]Article)(nil),
+			expectError: ErrNonuniqueResource,
+		}, {
 			description: "[]Article (empty)",
 			given:       emptyManyBody,
 			do: func(body []byte) (any, error) {
@@ -416,6 +426,16 @@ func TestUnmarshal(t *testing.T) {
 			expect:      &articleRelatedCommentsNested,
 			expectError: nil,
 		}, {
+			description: "ArticleRelated (nonunique linkage)",
+			given:       articleRelatedNonuniqueLinkage,
+			do: func(body []byte) (any, error) {
+				var a ArticleRelated
+				err := Unmarshal(body, &a)
+				return a, err
+			},
+			expect:      ArticleRelated{},
+			expectError: ErrNonuniqueResource,
+		}, {
 			description: "links member only",
 			given:       `{"links":null}`,
 			do: func(body []byte) (any, error) {
@@ -712,7 +732,7 @@ func TestUnmarshalMemberNameValidation(t *testing.T) {
 	articleWithInvalidToplevelMetaMemberNameBody := `{"data":{"id":"1","type":"articles","attributes":{"title":"A"}},"meta":{"foo%":2}}`
 	articleWithInvalidJSONAPIMetaMemberNameBody := `{"data":{"id":"1","type":"articles","attributes":{"title":"A"}},"jsonapi":{"version":"1.0","meta":{"foo%":1}}}`
 	articleWithInvalidRelationshipAttributeNameNotIncludedBody := `{"data":{"id":"1","type":"articles","relationships":{"author":{"data":{"id":"1","type":"author"}}}}}`
-	articlesWithOneInvalidResourceMetaMemberName := `{"data":[{"id":"1","type":"articles"},{"id":"1","type":"articles","meta":{"foo%":1}}]}`
+	articlesWithOneInvalidResourceMetaMemberName := `{"data":[{"id":"1","type":"articles"},{"id":"2","type":"articles","meta":{"foo%":1}}]}`
 
 	tests := []struct {
 		description string

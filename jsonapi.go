@@ -44,6 +44,10 @@ func (ro *resourceObject) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+func (ro *resourceObject) getIdentifier() string {
+	return fmt.Sprintf("{Type: %v, ID: %v}", ro.Type, ro.ID)
+}
+
 // JSONAPI is a JSON:API object as defined by https://jsonapi.org/format/1.0/#document-jsonapi-object.
 type jsonAPI struct {
 	Version string `json:"version"`
@@ -235,26 +239,22 @@ func (d *document) isEmpty() bool {
 	return len(d.DataMany) == 0 && d.DataOne == nil
 }
 
+func (d *document) getResourceObjectSlice() []*resourceObject {
+	if d.hasMany {
+		return d.DataMany
+	}
+	if d.DataOne == nil {
+		return nil
+	}
+	return []*resourceObject{d.DataOne}
+}
+
 // verifyFullLinkage returns an error if the given compound document is not fully-linked as
 // described by https://jsonapi.org/format/1.1/#document-compound-documents. That is, there must be
 // a chain of relationships linking all included data to primary data transitively.
 func (d *document) verifyFullLinkage(aliasRelationships bool) error {
 	if len(d.Included) == 0 {
 		return nil
-	}
-
-	getResourceObjectSlice := func(d *document) []*resourceObject {
-		if d.hasMany {
-			return d.DataMany
-		}
-		if d.DataOne == nil {
-			return nil
-		}
-		return []*resourceObject{d.DataOne}
-	}
-
-	resourceIdentifier := func(ro *resourceObject) string {
-		return fmt.Sprintf("{Type: %v, ID: %v}", ro.Type, ro.ID)
 	}
 
 	// a list of related resource identifiers, and a flag to mark nodes as visited
@@ -270,16 +270,16 @@ func (d *document) verifyFullLinkage(aliasRelationships bool) error {
 		relatedTo := make([]*resourceObject, 0)
 
 		for _, relationship := range included.Relationships {
-			relatedTo = append(relatedTo, getResourceObjectSlice(relationship)...)
+			relatedTo = append(relatedTo, relationship.getResourceObjectSlice()...)
 		}
 
-		includeGraph[resourceIdentifier(included)] = &includeNode{included, relatedTo, false}
+		includeGraph[included.getIdentifier()] = &includeNode{included, relatedTo, false}
 	}
 
 	// helper to traverse the graph from a given key and mark nodes as visited
 	var visit func(ro *resourceObject)
 	visit = func(ro *resourceObject) {
-		node, ok := includeGraph[resourceIdentifier(ro)]
+		node, ok := includeGraph[ro.getIdentifier()]
 		if !ok {
 			return
 		}
@@ -299,10 +299,10 @@ func (d *document) verifyFullLinkage(aliasRelationships bool) error {
 	}
 
 	// visit all include nodes that are accessible from the primary data
-	primaryData := getResourceObjectSlice(d)
+	primaryData := d.getResourceObjectSlice()
 	for _, data := range primaryData {
 		for _, relationship := range data.Relationships {
-			for _, ro := range getResourceObjectSlice(relationship) {
+			for _, ro := range relationship.getResourceObjectSlice() {
 				visit(ro)
 			}
 		}
@@ -320,6 +320,35 @@ func (d *document) verifyFullLinkage(aliasRelationships bool) error {
 	}
 
 	return nil
+}
+
+// verifyResourceUniqueness checks if the given document contains unique resources as described
+// by https://jsonapi.org/format/1.1/#document-resource-object-identification. Resource objects
+// across primary data and included must be unique, and resource linkages must be unique in
+// any given relationship section.
+func (d *document) verifyResourceUniqueness() bool {
+	topLevelSeen := make(map[string]bool)
+
+	for _, ro := range append(d.getResourceObjectSlice(), d.Included...) {
+		rid := ro.getIdentifier()
+		if ro.ID != "" && topLevelSeen[rid] {
+			return false
+		}
+		topLevelSeen[rid] = true
+
+		relSeen := make(map[string]bool)
+		for _, rel := range ro.Relationships {
+			for _, relRo := range rel.getResourceObjectSlice() {
+				relRid := relRo.getIdentifier()
+				if relRo.ID != "" && relSeen[relRid] {
+					return false
+				}
+				relSeen[relRid] = true
+			}
+		}
+	}
+
+	return true
 }
 
 // Linkable can be implemented to marshal resource object links as defined by https://jsonapi.org/format/1.0/#document-resource-object-links.

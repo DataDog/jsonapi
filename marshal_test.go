@@ -82,6 +82,11 @@ func TestMarshal(t *testing.T) {
 			expect:      articlesABBody,
 			expectError: nil,
 		}, {
+			description: "[]Article (nonunique data)",
+			given:       articlesAA,
+			expect:      "",
+			expectError: ErrNonuniqueResource,
+		}, {
 			description: "[]*Article",
 			given:       articlesABPtr,
 			expect:      articlesABBody,
@@ -585,6 +590,12 @@ func TestMarshalRelationships(t *testing.T) {
 			expect:         articleRelatedCommentsBody,
 			expectError:    nil,
 		}, {
+			description:    "with related nonunique comments",
+			given:          &articleRelatedNonuniqueComments,
+			marshalOptions: nil,
+			expect:         "",
+			expectError:    ErrNonuniqueResource,
+		}, {
 			description:    "with related author and comments",
 			given:          &articleRelatedComplete,
 			marshalOptions: nil,
@@ -752,7 +763,7 @@ func TestMarshalMemberNameValidation(t *testing.T) {
 		}, {
 			description: "Articles with one invalid resource meta member name",
 			given: []*ArticleWithGenericMeta{
-				{ID: "1"}, {ID: "1", Meta: map[string]any{"foo%": 1}},
+				{ID: "1"}, {ID: "2", Meta: map[string]any{"foo%": 1}},
 			},
 			expectError: &MemberNameValidationError{"foo%"},
 		}, {

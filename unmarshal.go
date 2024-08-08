@@ -88,6 +88,9 @@ func Unmarshal(data []byte, v any, opts ...UnmarshalOption) (err error) {
 }
 
 func (d *document) unmarshal(v any, m *Unmarshaler) (err error) {
+	if ok := d.verifyResourceUniqueness(); !ok {
+		return ErrNonuniqueResource
+	}
 	// verify full-linkage in-case this is a compound document
 	if err = d.verifyFullLinkage(true); err != nil {
 		return
@@ -142,7 +145,7 @@ func unmarshalResourceObjects(ros []*resourceObject, v any, m *Unmarshaler) erro
 	outType := derefType(reflect.TypeOf(v))
 	outValue := derefValue(reflect.ValueOf(v))
 
-	// first, it must be a struct since we'll be parsing the jsonapi struct tags
+	// first, it must be a slice since we'll be parsing multiple resource objects
 	if outType.Kind() != reflect.Slice {
 		return &TypeError{Actual: outType.String(), Expected: []string{"slice"}}
 	}

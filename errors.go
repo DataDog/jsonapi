@@ -37,6 +37,10 @@ var (
 	// ErrRelationshipMissingRequiredMembers indicates that a relationship does not have at least one required member
 	ErrRelationshipMissingRequiredMembers = errors.New("relationship is missing required top-level members; must have one of: \"data\", \"meta\", \"links\"")
 
+	// ErrNonuniqueResource indicates that multiple resource objects across the primary data and included sections share
+	// the same type & id, or multiple resource linkages with the same type & id exist in a relationship section
+	ErrNonuniqueResource = errors.New("\"type\" and \"id\" must be unique across resources")
+
 	// ErrErrorUnmarshalingNotImplemented indicates that an attempt was made to unmarshal an error document
 	ErrErrorUnmarshalingNotImplemented = errors.New("error unmarshaling is not implemented")
 )
