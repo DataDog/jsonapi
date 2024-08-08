@@ -327,23 +327,23 @@ func (d *document) verifyFullLinkage(aliasRelationships bool) error {
 // across primary data and included must be unique, and resource linkages must be unique in
 // any given relationship section.
 func (d *document) verifyResourceUniqueness() bool {
-	topLevelSeen := make(map[string]struct{})
+	topLevelSeen := make(map[string]bool)
 
 	for _, ro := range append(d.getResourceObjectSlice(), d.Included...) {
 		rid := ro.getIdentifier()
-		if _, ok := topLevelSeen[rid]; ro.ID != "" && ok {
+		if ro.ID != "" && topLevelSeen[rid] {
 			return false
 		}
-		topLevelSeen[rid] = struct{}{}
+		topLevelSeen[rid] = true
 
-		relSeen := make(map[string]struct{})
+		relSeen := make(map[string]bool)
 		for _, rel := range ro.Relationships {
 			for _, relRo := range rel.getResourceObjectSlice() {
 				relRid := relRo.getIdentifier()
-				if _, ok := relSeen[relRid]; relRo.ID != "" && ok {
+				if relRo.ID != "" && relSeen[relRid] {
 					return false
 				}
-				relSeen[relRid] = struct{}{}
+				relSeen[relRid] = true
 			}
 		}
 	}
