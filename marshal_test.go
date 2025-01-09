@@ -20,6 +20,7 @@ func TestMarshal(t *testing.T) {
 		given       any
 		expect      string
 		expectError error
+		opts        []MarshalOption
 	}{
 		{
 			description: "nil",
@@ -86,6 +87,7 @@ func TestMarshal(t *testing.T) {
 			given:       articlesAA,
 			expect:      "",
 			expectError: ErrNonuniqueResource,
+			opts:        []MarshalOption{MarshallCheckUniqueness()},
 		}, {
 			description: "[]*Article",
 			given:       articlesABPtr,
@@ -592,7 +594,7 @@ func TestMarshalRelationships(t *testing.T) {
 		}, {
 			description:    "with related nonunique comments",
 			given:          &articleRelatedNonuniqueComments,
-			marshalOptions: nil,
+			marshalOptions: []MarshalOption{MarshallCheckUniqueness()},
 			expect:         "",
 			expectError:    ErrNonuniqueResource,
 		}, {
