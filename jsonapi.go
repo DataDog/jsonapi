@@ -333,7 +333,6 @@ func (d *document) verifyResourceUniqueness() bool {
 		rid := ro.getIdentifier()
 		if ro.ID != "" && topLevelSeen[rid] {
 			return false
-			//panic(fmt.Sprintf("Normal: %+v, %s", topLevelSeen, rid))
 		}
 		topLevelSeen[rid] = true
 
@@ -343,7 +342,6 @@ func (d *document) verifyResourceUniqueness() bool {
 				relRid := relRo.getIdentifier()
 				if relRo.ID != "" && relSeen[relRid] {
 					return false
-					//panic(fmt.Sprintf("Rel: %+v, %s", relSeen, relRid))
 				}
 				relSeen[relRid] = true
 			}
