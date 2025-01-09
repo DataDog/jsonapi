@@ -182,6 +182,7 @@ var (
 	articleRelatedCompleteBody                  = `{"data":{"id":"1","type":"articles","attributes":{"title":"A"},"relationships":{"author":{"data":{"id":"1","type":"author"},"meta":{"count":10},"links":{"self":"http://example.com/articles/1/relationships/author","related":"http://example.com/articles/1/author"}},"comments":{"data":[{"id":"1","type":"comments"},{"id":"2","type":"comments"}],"links":{"self":"http://example.com/articles/1/relationships/comments","related":"http://example.com/articles/1/comments"}}}}}`
 	articleRelatedCompleteWithIncludeBody       = `{"data":{"id":"1","type":"articles","attributes":{"title":"A"},"relationships":{"author":{"data":{"id":"1","type":"author"}},"comments":{"data":[{"id":"1","type":"comments"},{"id":"2","type":"comments"}]}}},"included":[{"id":"1","type":"author","attributes":{"name":"A"}},{"id":"1","type":"comments","attributes":{"body":"A"}},{"id":"2","type":"comments","attributes":{"body":"B"}}]}`
 	articleRelatedNonuniqueLinkage              = `{"data":{"id":"1","type":"articles","attributes":{"title":"A"},"relationships":{"author":{"data":{"id":"1","type":"author"}},"comments":{"data":[{"id":"1","type":"comments"},{"id":"1","type":"comments"}]}}}}`
+	articleRelatedDifferentRefToSameObject      = `{"data":{"id":"1","type":"articles","attributes":{"title":"A"},"relationships":{"author":{"data":{"id":"1","type":"author"}},"contact":{"data":{"id":"1","type":"author"}},"comments":{"data":[{"id":"1","type":"comments"}]}}}}`
 	articleRelatedCommentsNestedWithIncludeBody = `{"data":{"id":"1","type":"articles","attributes":{"title":"A"},"relationships":{"comments":{"data":[{"id":"1","type":"comments"}],"links":{"self":"http://example.com/articles/1/relationships/comments","related":"http://example.com/articles/1/comments"}}}},"included":[{"id":"1","type":"comments","attributes":{"body":"A"},"relationships":{"author":{"data":{"id":"1","type":"author"},"links":{"self":"http://example.com/comments/1/relationships/author","related":"http://example.com/comments/1/author"}}}},{"id":"1","type":"author","attributes":{"name":"A"}}]}`
 	articleWithIncludeOnlyBody                  = `{"data":{"id":"1","type":"articles","attributes":{"title":"A"}},"included":[{"id":"1","type":"author","attributes":{"name":"A"}}]}`
 	articleRelatedAuthorLinksOnlyBody           = `{"data":{"id":"1","type":"articles","attributes":{"title":"A"},"relationships":{"author":{"links":{"self":"http://example.com/articles/1/relationships/author","related":"http://example.com/articles/1/author"}}}}}`
@@ -438,6 +439,14 @@ type Author struct {
 type ArticleRelated struct {
 	ID       string     `jsonapi:"primary,articles"`
 	Title    string     `jsonapi:"attribute" json:"title"`
+	Author   *Author    `jsonapi:"relationship" json:"author,omitempty"`
+	Comments []*Comment `jsonapi:"relationship" json:"comments,omitempty"`
+}
+
+type ArticleRelatedWithContact struct {
+	ID       string     `jsonapi:"primary,articles"`
+	Title    string     `jsonapi:"attribute" json:"title"`
+	Contact  *Author    `jsonapi:"relationship" json:"contact,omitempty"`
 	Author   *Author    `jsonapi:"relationship" json:"author,omitempty"`
 	Comments []*Comment `jsonapi:"relationship" json:"comments,omitempty"`
 }

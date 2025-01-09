@@ -1,6 +1,7 @@
 package jsonapi
 
 import (
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"reflect"
@@ -435,7 +436,25 @@ func TestUnmarshal(t *testing.T) {
 			},
 			expect:      ArticleRelated{},
 			expectError: ErrNonuniqueResource,
-		}, {
+		},
+		{
+			description: "ArticleRelatedWithContact (nonunique linkage)",
+			given:       articleRelatedDifferentRefToSameObject,
+			do: func(body []byte) (any, error) {
+				var a ArticleRelatedWithContact
+				err := Unmarshal(body, &a)
+				return &a, err
+			},
+			expect: &ArticleRelatedWithContact{
+				ID:       "1",
+				Title:    "A",
+				Author:   &Author{ID: "1"},
+				Comments: []*Comment{{ID: "1"}},
+				Contact:  &Author{ID: "1"},
+			},
+			expectError: nil,
+		},
+		{
 			description: "links member only",
 			given:       `{"links":null}`,
 			do: func(body []byte) (any, error) {
