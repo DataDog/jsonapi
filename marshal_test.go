@@ -287,11 +287,11 @@ func TestMarshal(t *testing.T) {
 
 	for i, tc := range tests {
 		tc := tc
-		t.Run(fmt.Sprintf("%02d", i), func(t *testing.T) {
+		t.Run(fmt.Sprintf("%02d - %s", i, tc.description), func(t *testing.T) {
 			t.Parallel()
 			t.Log(tc.description)
 
-			actual, err := Marshal(tc.given)
+			actual, err := Marshal(tc.given, tc.opts...)
 			if tc.expectError != nil {
 				is.EqualError(t, tc.expectError, err)
 				is.Nil(t, actual)
@@ -643,7 +643,7 @@ func TestMarshalRelationships(t *testing.T) {
 
 	for i, tc := range tests {
 		tc := tc
-		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+		t.Run(fmt.Sprintf("%d - %s", i, tc.description), func(t *testing.T) {
 			t.Parallel()
 			t.Log(tc.description)
 
