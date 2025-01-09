@@ -11,6 +11,7 @@ import (
 type Unmarshaler struct {
 	unmarshalMeta            bool
 	unmarshalLinks           bool
+	checkUniqueness          bool
 	meta                     any
 	links                    *Link
 	memberNameValidationMode MemberNameValidationMode
@@ -32,6 +33,13 @@ func UnmarshalLinks(link *Link) UnmarshalOption {
 	return func(m *Unmarshaler) {
 		m.unmarshalLinks = true
 		m.links = link
+	}
+}
+
+// UnmarshalCheckUniqueness enables checking for unique resources during unmarshaling.
+func UnmarshalCheckUniqueness() UnmarshalOption {
+	return func(m *Unmarshaler) {
+		m.checkUniqueness = true
 	}
 }
 
@@ -88,8 +96,10 @@ func Unmarshal(data []byte, v any, opts ...UnmarshalOption) (err error) {
 }
 
 func (d *document) unmarshal(v any, m *Unmarshaler) (err error) {
-	if ok := d.verifyResourceUniqueness(); !ok {
-		return ErrNonuniqueResource
+	if m.checkUniqueness {
+		if ok := d.verifyResourceUniqueness(); !ok {
+			return ErrNonuniqueResource
+		}
 	}
 	// verify full-linkage in-case this is a compound document
 	if err = d.verifyFullLinkage(true); err != nil {
