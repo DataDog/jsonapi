@@ -74,7 +74,7 @@ func TestUnmarshal(t *testing.T) {
 			given:       articlesABNonuniqueData,
 			do: func(body []byte) (any, error) {
 				var a []Article
-				err := Unmarshal(body, &a)
+				err := Unmarshal(body, &a, UnmarshalCheckUniqueness())
 				return a, err
 			},
 			expect:      ([]Article)(nil),
@@ -430,7 +430,7 @@ func TestUnmarshal(t *testing.T) {
 			given:       articleRelatedNonuniqueLinkage,
 			do: func(body []byte) (any, error) {
 				var a ArticleRelated
-				err := Unmarshal(body, &a)
+				err := Unmarshal(body, &a, UnmarshalCheckUniqueness())
 				return a, err
 			},
 			expect:      ArticleRelated{},
