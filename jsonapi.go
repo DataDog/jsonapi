@@ -338,8 +338,8 @@ func (d *document) verifyResourceUniqueness() bool {
 		}
 		topLevelSeen[rid] = true
 
-		relSeen := make(map[string]bool)
 		for _, rel := range ro.Relationships {
+			relSeen := make(map[string]bool)
 			for _, relRo := range rel.getResourceObjectSlice() {
 				relRid := relRo.getIdentifier()
 				if relRo.ID != "" && relSeen[relRid] {
