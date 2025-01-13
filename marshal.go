@@ -21,6 +21,7 @@ func init() {
 type Marshaler struct {
 	meta                     any
 	includeJSONAPI           bool
+	checkUniqueness          bool
 	jsonAPImeta              any
 	included                 []any
 	link                     *Link
@@ -47,6 +48,13 @@ func MarshalJSONAPI(meta any) MarshalOption {
 	return func(m *Marshaler) {
 		m.includeJSONAPI = true
 		m.jsonAPImeta = meta
+	}
+}
+
+// MarshallCheckUniqueness enables checking for unique resources during marshaling.
+func MarshallCheckUniqueness() MarshalOption {
+	return func(m *Marshaler) {
+		m.checkUniqueness = true
 	}
 }
 
@@ -204,9 +212,10 @@ func makeDocument(v any, m *Marshaler, isRelationship bool) (*document, error) {
 		}
 		d.Included = append(d.Included, ro)
 	}
-
-	if ok := d.verifyResourceUniqueness(); !ok {
-		return nil, ErrNonuniqueResource
+	if m.checkUniqueness {
+		if ok := d.verifyResourceUniqueness(); !ok {
+			return nil, ErrNonuniqueResource
+		}
 	}
 	// if we got any included data, verify full-linkage of this compound document.
 	if err := d.verifyFullLinkage(false); err != nil {

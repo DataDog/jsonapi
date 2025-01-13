@@ -75,15 +75,17 @@ type LinkObject struct {
 }
 
 // Link is the top-level links object as defined by https://jsonapi.org/format/1.0/#document-top-level.
-// First|Last|Next|Previous are provided to support pagination as defined by https://jsonapi.org/format/1.0/#fetching-pagination.
+// First|Last|Next|Prev are provided to support pagination as defined by https://jsonapi.org/format/1.0/#fetching-pagination.
 type Link struct {
 	Self    any `json:"self,omitempty"`
 	Related any `json:"related,omitempty"`
 
-	First    string `json:"first,omitempty"`
-	Last     string `json:"last,omitempty"`
-	Next     string `json:"next,omitempty"`
+	First string `json:"first,omitempty"`
+	Last  string `json:"last,omitempty"`
+	Next  string `json:"next,omitempty"`
+	// Previous is deprecated and kept for backwards compatibility. Instead, use the Prev field.
 	Previous string `json:"previous,omitempty"`
+	Prev     string `json:"prev,omitempty"`
 }
 
 func checkLinkValue(linkValue any) (bool, *TypeError) {
