@@ -293,6 +293,9 @@ func (ro *resourceObject) unmarshalFields(v any, rv reflect.Value, rt reflect.Ty
 			}
 			if !relDocument.hasMany && relDocument.isEmpty() {
 				// ensure struct field is nil for data:null cases only (we want empty slice for data:[])
+				if canBeNil(fv) {
+					fv.Set(reflect.Zero(ft.Type))
+				}
 				continue
 			}
 

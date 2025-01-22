@@ -331,6 +331,19 @@ func TestUnmarshal(t *testing.T) {
 			expect:      &ArticleRelated{},
 			expectError: ErrEmptyDataObject,
 		}, {
+			description: "*ArticleRelated with nil relationships data",
+			given:       articleRelatedLiteralNullData,
+			do: func(body []byte) (any, error) {
+				a := ArticleRelated{
+					Author:   &Author{ID: "100"},
+					Comments: []*Comment{{ID: "200"}},
+				}
+				err := Unmarshal(body, &a)
+				return &a, err
+			},
+			expect:      &ArticleRelated{ID: "1", Title: "A", Author: nil, Comments: nil},
+			expectError: nil,
+		}, {
 			description: "*ArticleRelated.Author",
 			given:       articleRelatedAuthorBody,
 			do: func(body []byte) (any, error) {
