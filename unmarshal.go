@@ -3,6 +3,7 @@ package jsonapi
 import (
 	"encoding"
 	"encoding/json"
+	"errors"
 	"reflect"
 )
 
@@ -232,7 +233,17 @@ func (ro *resourceObject) unmarshalFields(v any, rv reflect.Value, rt reflect.Ty
 			if setPrimary {
 				return ErrUnmarshalDuplicatePrimaryField
 			}
-			if ro.Type != jsonapiTag.resourceType {
+
+			if vut, ok := v.(UnmarshalType); ok {
+				err := vut.UnmarshalType(ro.Type)
+				if err != nil {
+					return errors.Join(
+						&TypeError{Actual: ro.Type, Expected: []string{jsonapiTag.resourceType}},
+						err,
+					)
+				}
+
+			} else if ro.Type != jsonapiTag.resourceType {
 				return &TypeError{Actual: ro.Type, Expected: []string{jsonapiTag.resourceType}}
 			}
 			if !isValidMemberName(ro.Type, m.memberNameValidationMode) {

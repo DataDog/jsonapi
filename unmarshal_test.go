@@ -150,6 +150,16 @@ func TestUnmarshal(t *testing.T) {
 			expect:      []*Article{&articleA, &articleB},
 			expectError: nil,
 		}, {
+			description: "*ArticleUnmarshalType",
+			given:       articleACustomTypeBody,
+			do: func(body []byte) (any, error) {
+				var a ArticleTypeOverride
+				err := Unmarshal(body, &a)
+				return &a, err
+			},
+			expect:      &articleACustomType,
+			expectError: nil,
+		}, {
 			description: "*ArticleIntID",
 			given:       articleABody,
 			do: func(body []byte) (any, error) {

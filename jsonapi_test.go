@@ -56,6 +56,7 @@ var (
 	articleLinkedInvalidSelfMeta                 = ArticleLinkedInvalidSelfMeta{ID: "1"}
 	articleOmitTitleFull                         = ArticleOmitTitle{ID: "1"}
 	articleOmitTitlePartial                      = ArticleOmitTitle{ID: "1", Subtitle: "A"}
+	articleACustomType                           = ArticleTypeOverride{ID: "1", Title: "A"}
 	articleAIntID                                = ArticleIntID{ID: 1, Title: "A"}
 	articleBIntID                                = ArticleIntID{ID: 2, Title: "B"}
 	articlesIntIDABPtr                           = []*ArticleIntID{&articleAIntID, &articleBIntID}
@@ -150,6 +151,7 @@ var (
 	emptySingleBody                       = `{"data":{}}`
 	emptyManyBody                         = `{"data":[]}`
 	articleABody                          = `{"data":{"type":"articles","id":"1","attributes":{"title":"A"}}}`
+	articleACustomTypeBody                = `{"data":{"type":"customarticles","id":"1","attributes":{"title":"A"}}}`
 	articleANoIDBody                      = `{"data":{"type":"articles","attributes":{"title":"A"}}}`
 	articleAInvalidTypeBody               = `{"data":{"type":"not-articles","id":"1","attributes":{"title":"A"}}}`
 	articleOmitTitleFullBody              = `{"data":{"type":"articles","id":"1"}}`
@@ -350,6 +352,22 @@ type ArticleOmitTitle struct {
 type ArticleIntID struct {
 	ID    int    `jsonapi:"primary,articles"`
 	Title string `jsonapi:"attribute" json:"title"`
+}
+
+type ArticleTypeOverride struct {
+	ID    string `jsonapi:"primary,articles"`
+	Title string `jsonapi:"attribute" json:"title"`
+}
+
+func (a *ArticleTypeOverride) MarshalType() string {
+	return "customarticles"
+}
+
+func (a *ArticleTypeOverride) UnmarshalType(jsonapiType string) error {
+	if jsonapiType != "customarticles" {
+		return fmt.Errorf("invalid type: %s", jsonapiType)
+	}
+	return nil
 }
 
 func (a *ArticleIntID) MarshalID() string {

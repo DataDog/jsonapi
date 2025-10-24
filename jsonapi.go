@@ -385,3 +385,27 @@ type MarshalIdentifier interface {
 type UnmarshalIdentifier interface {
 	UnmarshalID(id string) error
 }
+
+// MarshalType can be optionally implemented to control marshaling of the type field.
+//
+// The order of operations for marshaling the type field is:
+//
+//  1. Use MarshalType if it is implemented
+//  2. Use the value from the jsonapi tag on the primary field
+//  3. Fail
+type MarshalType interface {
+	MarshalType() string
+}
+
+// UnmarshalType can be optionally implemented to control unmarshaling of the type field from a string.
+// Since the type is not typically set as a field on the object, this is an opportunity to return an error
+// if the passed in type from the payload is unexpected. This allows customization of the expected type field.
+//
+// The order of operations for checking the type field is:
+//
+//  1. Use UnmarshalType if it is implemented, fail if it returns an error
+//  2. Compare against the type provided in the jsonapi tag on the primary field
+//  3. Fail
+type UnmarshalType interface {
+	UnmarshalType(jsonapiType string) error
+}

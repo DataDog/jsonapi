@@ -159,6 +159,11 @@ func TestMarshal(t *testing.T) {
 			expect:      "",
 			expectError: &TypeError{Actual: "string", Expected: []string{"struct"}},
 		}, {
+			description: "*ArticleMarshalType (MarshalType)",
+			given:       &articleACustomType,
+			expect:      articleACustomTypeBody,
+			expectError: nil,
+		}, {
 			description: "*ArticleIntID (MarshalIdentifier)",
 			given:       &articleAIntID,
 			expect:      articleABody,

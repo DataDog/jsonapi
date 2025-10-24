@@ -355,6 +355,9 @@ func (d *document) makeResourceObject(v any, vt reflect.Type, m *Marshaler) (*re
 		switch tag.directive {
 		case primary:
 			ro.Type = tag.resourceType
+			if vmt, ok := v.(MarshalType); ok {
+				ro.Type = vmt.MarshalType()
+			}
 			if !isValidMemberName(ro.Type, m.memberNameValidationMode) {
 				// type names count as member names
 				return nil, &MemberNameValidationError{ro.Type}
