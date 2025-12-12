@@ -109,6 +109,10 @@ func checkLinkValue(linkValue any) (bool, *TypeError) {
 }
 
 func (l *Link) check() error {
+	if l == nil {
+		return nil
+	}
+
 	selfIsEmpty, err := checkLinkValue(l.Self)
 	if err != nil {
 		return err
