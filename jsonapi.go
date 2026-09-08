@@ -363,6 +363,13 @@ type LinkableRelation interface {
 	LinkRelation(relation string) *Link
 }
 
+// MarshalResourceIdentifierMeta can be implemented to add meta to a resource identifier object.
+// The marshaler uses this interface only when it marshals a resource as relationship data.
+// Return nil to omit the meta member.
+type MarshalResourceIdentifierMeta interface {
+	MarshalResourceIdentifierMeta() any
+}
+
 // MarshalIdentifier can be optionally implemented to control marshaling of the primary field to a string.
 //
 // The order of operations for marshaling the primary field is:
