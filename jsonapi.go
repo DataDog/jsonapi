@@ -365,6 +365,7 @@ type LinkableRelation interface {
 
 // MarshalResourceIdentifierMeta can be implemented to add meta to a resource identifier object.
 // The marshaler uses this interface only when it marshals a resource as relationship data.
+// The method must return a map or struct.
 // Return nil to omit the meta member.
 type MarshalResourceIdentifierMeta interface {
 	MarshalResourceIdentifierMeta() any
