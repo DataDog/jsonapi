@@ -473,6 +473,16 @@ func (d *document) makeResourceObject(v any, vt reflect.Type, m *Marshaler) (*re
 		return nil, ErrEmptyPrimaryField
 	}
 
+	// Resource identifier objects can have their own meta. Keep this separate from
+	// the relationship document meta that the jsonapi:"meta" directive controls.
+	if d.isRelationship {
+		metaObject, err := marshalResourceIdentifierMeta(v)
+		if err != nil {
+			return nil, err
+		}
+		ro.Meta = metaObject
+	}
+
 	// if Linkable is implemented include ResourceObject.Links
 	if lv, ok := v.(Linkable); ok {
 		link := lv.Link()
@@ -483,6 +493,28 @@ func (d *document) makeResourceObject(v any, vt reflect.Type, m *Marshaler) (*re
 	}
 
 	return ro, nil
+}
+
+func marshalResourceIdentifierMeta(v any) (any, error) {
+	vm, ok := v.(MarshalResourceIdentifierMeta)
+	if !ok {
+		return nil, nil
+	}
+
+	metaObject := vm.MarshalResourceIdentifierMeta()
+	if err := checkMeta(metaObject); err != nil {
+		return nil, err
+	}
+	if metaObject == nil {
+		return nil, nil
+	}
+
+	metaValue := reflect.ValueOf(metaObject)
+	if canBeNil(metaValue) && metaValue.IsNil() {
+		return nil, nil
+	}
+
+	return metaObject, nil
 }
 
 func getFlattenedFields(iface interface{}) []struct {

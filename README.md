@@ -132,6 +132,23 @@ You can implement the following on the field types themselves if they are not al
 3. Use the value directly if it is a string
 4. Fail
 
+## Resource Identifier Metadata
+
+JSON:API permits a resource identifier object in relationship data to contain a `meta` object. Implement `jsonapi.MarshalResourceIdentifierMeta` on the related resource type to add this object.
+
+```go
+type Comment struct {
+    ID    string `jsonapi:"primary,comments"`
+    Index int
+}
+
+func (c Comment) MarshalResourceIdentifierMeta() any {
+    return map[string]any{"index": c.Index}
+}
+```
+
+The marshaler uses this interface only for relationship data. Return `nil` to omit the `meta` member. The `jsonapi:"meta"` directive continues to control metadata on the relationship object.
+
 ## Links
 
 [Links](https://jsonapi.org/format/1.0/#document-links) are supported via two interfaces and the [Link](https://pkg.go.dev/github.com/DataDog/jsonapi#Link) type. To include links you must implement one or both of the following interfaces.
