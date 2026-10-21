@@ -2,9 +2,11 @@
 package jsonapi
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"strings"
 )
 
 // ResourceObject is a JSON:API resource object as defined by https://jsonapi.org/format/1.0/#document-resource-objects
@@ -22,13 +24,25 @@ func (ro *resourceObject) UnmarshalJSON(data []byte) error {
 	type alias resourceObject
 
 	auxRaw := &struct {
-		Rels map[string]json.RawMessage `json:"relationships,omitempty"`
+		Rels  map[string]json.RawMessage `json:"relationships,omitempty"`
+		Attrs json.RawMessage            `json:"attributes,omitempty"`
 		*alias
 	}{
 		alias: (*alias)(ro),
 	}
 	if err := json.Unmarshal(data, &auxRaw); err != nil {
 		return err
+	}
+	if len(auxRaw.Attrs) > 0 {
+		// decode numbers as json.Number so integers above 2^53 reach typed fields without float64 rounding
+		d := json.NewDecoder(bytes.NewReader(auxRaw.Attrs))
+		d.UseNumber()
+		if err := d.Decode(&ro.Attributes); err != nil {
+			return err
+		}
+		for k, v := range ro.Attributes {
+			ro.Attributes[k] = floatNonIntegers(v)
+		}
 	}
 
 	ro.Relationships = make(map[string]*document, len(auxRaw.Rels))
@@ -42,6 +56,28 @@ func (ro *resourceObject) UnmarshalJSON(data []byte) error {
 		ro.Relationships[name] = &d
 	}
 	return nil
+}
+
+// floatNonIntegers converts json.Number values that aren't integer literals back to float64, so only
+// integers change behavior (e.g. 100.0 still decodes into an int field).
+func floatNonIntegers(v any) any {
+	switch t := v.(type) {
+	case json.Number:
+		if strings.ContainsAny(string(t), ".eE") {
+			if f, err := t.Float64(); err == nil {
+				return f
+			}
+		}
+	case map[string]any:
+		for k, e := range t {
+			t[k] = floatNonIntegers(e)
+		}
+	case []any:
+		for i, e := range t {
+			t[i] = floatNonIntegers(e)
+		}
+	}
+	return v
 }
 
 func (ro *resourceObject) getIdentifier() string {

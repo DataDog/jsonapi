@@ -1,6 +1,7 @@
 package jsonapi
 
 import (
+	"bytes"
 	"encoding"
 	"encoding/json"
 	"errors"
@@ -13,6 +14,7 @@ type Unmarshaler struct {
 	unmarshalMeta            bool
 	unmarshalLinks           bool
 	checkUniqueness          bool
+	useNumber                bool
 	meta                     any
 	links                    *Link
 	memberNameValidationMode MemberNameValidationMode
@@ -44,6 +46,14 @@ func UnmarshalCheckUniqueness() UnmarshalOption {
 	}
 }
 
+// UnmarshalUseNumber decodes numbers in interface{} attribute values (e.g. map[string]any) as json.Number
+// instead of float64, so integers above 2^53 keep every digit.
+func UnmarshalUseNumber() UnmarshalOption {
+	return func(m *Unmarshaler) {
+		m.useNumber = true
+	}
+}
+
 // UnmarshalSetNameValidation enables a given level of document member name validation.
 func UnmarshalSetNameValidation(mode MemberNameValidationMode) UnmarshalOption {
 	return func(m *Unmarshaler) {
@@ -57,6 +67,7 @@ func (m *Unmarshaler) relationshipUnmarshaler() *Unmarshaler {
 	rm := new(Unmarshaler)
 
 	rm.memberNameValidationMode = m.memberNameValidationMode
+	rm.useNumber = m.useNumber
 	return rm
 }
 
@@ -204,7 +215,7 @@ func (ro *resourceObject) unmarshal(v any, m *Unmarshaler) error {
 		return err
 	}
 
-	return ro.unmarshalAttributes(v)
+	return ro.unmarshalAttributes(v, m)
 }
 
 // unmarshalFields unmarshals a resource object into all non-attribute struct fields
@@ -338,7 +349,7 @@ func (ro *resourceObject) unmarshalFields(v any, rv reflect.Value, rt reflect.Ty
 	return nil
 }
 
-func (ro *resourceObject) unmarshalAttributes(v any) error {
+func (ro *resourceObject) unmarshalAttributes(v any, m *Unmarshaler) error {
 	if len(ro.Attributes) == 0 {
 		return nil
 	}
@@ -346,6 +357,11 @@ func (ro *resourceObject) unmarshalAttributes(v any) error {
 	b, err := json.Marshal(ro.Attributes)
 	if err != nil {
 		return err
+	}
+	if m != nil && m.useNumber {
+		d := json.NewDecoder(bytes.NewReader(b))
+		d.UseNumber()
+		return d.Decode(v)
 	}
 	return json.Unmarshal(b, v)
 }

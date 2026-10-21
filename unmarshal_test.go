@@ -764,6 +764,92 @@ func TestUnmarshalLinks(t *testing.T) {
 	}
 }
 
+func TestUnmarshalNumbers(t *testing.T) {
+	t.Parallel()
+
+	type nested struct {
+		Max int64 `json:"max"`
+	}
+	type numbers struct {
+		ID     string         `jsonapi:"primary,numbers"`
+		Int    int64          `jsonapi:"attribute" json:"int,omitempty"`
+		Uint   uint64         `jsonapi:"attribute" json:"uint,omitempty"`
+		Float  float64        `jsonapi:"attribute" json:"float,omitempty"`
+		Nested *nested        `jsonapi:"attribute" json:"nested,omitempty"`
+		List   []int64        `jsonapi:"attribute" json:"list,omitempty"`
+		Values map[string]any `jsonapi:"attribute" json:"values,omitempty"`
+		Int32  int32          `jsonapi:"attribute" json:"int32,omitempty"`
+	}
+
+	body := func(attributes string) []byte {
+		return []byte(`{"data":{"type":"numbers","id":"1","attributes":` + attributes + `}}`)
+	}
+
+	tests := []struct {
+		description string
+		given       []byte
+		opts        []UnmarshalOption
+		expect      any
+	}{
+		{
+			description: "int64 above 2^53",
+			given:       body(`{"int":9007199254740993}`),
+			expect:      &numbers{ID: "1", Int: 9007199254740993},
+		}, {
+			description: "uint64 max",
+			given:       body(`{"uint":18446744073709551615}`),
+			expect:      &numbers{ID: "1", Uint: 18446744073709551615},
+		}, {
+			description: "int64 min and max in nested struct and slice",
+			given:       body(`{"nested":{"max":9223372036854775807},"list":[-9223372036854775808,9007199254740993]}`),
+			expect:      &numbers{ID: "1", Nested: &nested{Max: 9223372036854775807}, List: []int64{-9223372036854775808, 9007199254740993}},
+		}, {
+			description: "non-integer literals with integer values decode into int64",
+			given:       body(`{"int":100.0,"list":[1e2]}`),
+			expect:      &numbers{ID: "1", Int: 100, List: []int64{100}},
+		}, {
+			description: "integer above 2^53 into float64 rounds",
+			given:       body(`{"float":9007199254740993}`),
+			expect:      &numbers{ID: "1", Float: 9007199254740992},
+		}, {
+			description: "map[string]any values are float64",
+			given:       body(`{"values":{"int":9007199254740993,"float":1.5}}`),
+			expect:      &numbers{ID: "1", Values: map[string]any{"int": float64(9007199254740992), "float": 1.5}},
+		}, {
+			description: "map[string]any values are json.Number with UnmarshalUseNumber",
+			given:       body(`{"values":{"int":9007199254740993,"float":1.5}}`),
+			opts:        []UnmarshalOption{UnmarshalUseNumber()},
+			expect:      &numbers{ID: "1", Values: map[string]any{"int": json.Number("9007199254740993"), "float": json.Number("1.5")}},
+		}, {
+			description: "non-integer literals with integer values decode into int64 with UnmarshalUseNumber",
+			given:       body(`{"int":100.0}`),
+			opts:        []UnmarshalOption{UnmarshalUseNumber()},
+			expect:      &numbers{ID: "1", Int: 100},
+		},
+	}
+
+	for i, tc := range tests {
+		tc := tc
+		t.Run(fmt.Sprintf("%02d", i), func(t *testing.T) {
+			t.Parallel()
+			t.Log(tc.description)
+
+			var actual numbers
+			err := Unmarshal(tc.given, &actual, tc.opts...)
+			is.MustNoError(t, err)
+			is.Equal(t, tc.expect, &actual)
+		})
+	}
+
+	t.Run("int32 out of range", func(t *testing.T) {
+		t.Parallel()
+
+		var actual numbers
+		err := Unmarshal(body(`{"int32":3000000000}`), &actual)
+		is.Error(t, err)
+	})
+}
+
 // TestUnmarshalMemberNameValidation collects tests which verify that invalid member names are
 // caught during unmarshaling, no matter where they're placed. This test does not exhaustively test
 // every possible invalid name.
