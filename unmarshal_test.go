@@ -808,6 +808,10 @@ func TestUnmarshalNumbers(t *testing.T) {
 			given:       body(`{"int":100.0,"list":[1e2]}`),
 			expect:      &numbers{ID: "1", Int: 100, List: []int64{100}},
 		}, {
+			description: "non-integer literals with integer values decode into int64 next to an integer above 2^53",
+			given:       body(`{"int":100.0,"uint":9007199254740993}`),
+			expect:      &numbers{ID: "1", Int: 100, Uint: 9007199254740993},
+		}, {
 			description: "integer above 2^53 into float64 rounds",
 			given:       body(`{"float":9007199254740993}`),
 			expect:      &numbers{ID: "1", Float: 9007199254740992},
