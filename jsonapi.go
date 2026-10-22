@@ -2,21 +2,22 @@
 package jsonapi
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"reflect"
-	"strings"
 )
 
 // ResourceObject is a JSON:API resource object as defined by https://jsonapi.org/format/1.0/#document-resource-objects
 type resourceObject struct {
 	ID            string               `json:"id,omitempty"`
 	Type          string               `json:"type"`
-	Attributes    attributes           `json:"attributes,omitempty"`
+	Attributes    map[string]any       `json:"attributes,omitempty"`
 	Relationships map[string]*document `json:"relationships,omitempty"`
 	Meta          any                  `json:"meta,omitempty"`
 	Links         *Link                `json:"links,omitempty"`
+
+	// rawAttributes holds the attributes as received, so they can be decoded without a float64 round-trip.
+	rawAttributes json.RawMessage
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface.
@@ -24,7 +25,8 @@ func (ro *resourceObject) UnmarshalJSON(data []byte) error {
 	type alias resourceObject
 
 	auxRaw := &struct {
-		Rels map[string]json.RawMessage `json:"relationships,omitempty"`
+		Rels  map[string]json.RawMessage `json:"relationships,omitempty"`
+		Attrs json.RawMessage            `json:"attributes,omitempty"`
 		*alias
 	}{
 		alias: (*alias)(ro),
@@ -32,6 +34,7 @@ func (ro *resourceObject) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &auxRaw); err != nil {
 		return err
 	}
+	ro.rawAttributes = auxRaw.Attrs
 
 	ro.Relationships = make(map[string]*document, len(auxRaw.Rels))
 	for name, raw := range auxRaw.Rels {
@@ -44,67 +47,6 @@ func (ro *resourceObject) UnmarshalJSON(data []byte) error {
 		ro.Relationships[name] = &d
 	}
 	return nil
-}
-
-// attributes holds resource object attributes, decoded so that integer literals keep every digit.
-type attributes map[string]any
-
-// UnmarshalJSON implements the json.Unmarshaler interface.
-func (a *attributes) UnmarshalJSON(data []byte) error {
-	// integers with at most 15 digits are exact in float64, so only longer ones need json.Number
-	if !hasLongDigitRun(data) {
-		return json.Unmarshal(data, (*map[string]any)(a))
-	}
-
-	d := json.NewDecoder(bytes.NewReader(data))
-	d.UseNumber()
-	var m map[string]any
-	if err := d.Decode(&m); err != nil {
-		return err
-	}
-	for k, v := range m {
-		m[k] = floatNonIntegers(v)
-	}
-	*a = m
-	return nil
-}
-
-// hasLongDigitRun reports whether data contains 16 or more consecutive digits.
-func hasLongDigitRun(data []byte) bool {
-	run := 0
-	for _, c := range data {
-		if c < '0' || c > '9' {
-			run = 0
-			continue
-		}
-		run++
-		if run >= 16 {
-			return true
-		}
-	}
-	return false
-}
-
-// floatNonIntegers converts json.Number values that aren't integer literals back to float64, so only
-// integers change behavior (e.g. 100.0 still decodes into an int field).
-func floatNonIntegers(v any) any {
-	switch t := v.(type) {
-	case json.Number:
-		if strings.ContainsAny(string(t), ".eE") {
-			if f, err := t.Float64(); err == nil {
-				return f
-			}
-		}
-	case map[string]any:
-		for k, e := range t {
-			t[k] = floatNonIntegers(e)
-		}
-	case []any:
-		for i, e := range t {
-			t[i] = floatNonIntegers(e)
-		}
-	}
-	return v
 }
 
 func (ro *resourceObject) getIdentifier() string {

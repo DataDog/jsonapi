@@ -46,8 +46,9 @@ func UnmarshalCheckUniqueness() UnmarshalOption {
 	}
 }
 
-// UnmarshalUseNumber decodes numbers in interface{} attribute values (e.g. map[string]any) as json.Number
-// instead of float64, so integers above 2^53 keep every digit.
+// UnmarshalUseNumber decodes attributes directly with json.Number, so integers above 2^53 keep every digit
+// in typed fields and interface{} values (e.g. map[string]any) hold json.Number instead of float64.
+// Non-integer literals such as 100.0 no longer decode into integer fields.
 func UnmarshalUseNumber() UnmarshalOption {
 	return func(m *Unmarshaler) {
 		m.useNumber = true
@@ -350,18 +351,27 @@ func (ro *resourceObject) unmarshalFields(v any, rv reflect.Value, rt reflect.Ty
 }
 
 func (ro *resourceObject) unmarshalAttributes(v any, m *Unmarshaler) error {
-	if len(ro.Attributes) == 0 {
+	if len(ro.rawAttributes) == 0 || bytes.Equal(ro.rawAttributes, []byte("null")) {
 		return nil
 	}
 
-	b, err := json.Marshal(ro.Attributes)
-	if err != nil {
-		return err
-	}
 	if m != nil && m.useNumber {
-		d := json.NewDecoder(bytes.NewReader(b))
+		d := json.NewDecoder(bytes.NewReader(ro.rawAttributes))
 		d.UseNumber()
 		return d.Decode(v)
+	}
+
+	var attributes map[string]any
+	if err := json.Unmarshal(ro.rawAttributes, &attributes); err != nil {
+		return err
+	}
+	if len(attributes) == 0 {
+		return nil
+	}
+
+	b, err := json.Marshal(attributes)
+	if err != nil {
+		return err
 	}
 	return json.Unmarshal(b, v)
 }
