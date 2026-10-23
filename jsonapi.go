@@ -58,7 +58,7 @@ func (ro *resourceObject) UnmarshalJSON(data []byte) error {
 	for name, raw := range auxRaw.Rels {
 		// mark the created sub-documents as relationships so that the document Unmarshaler
 		// can handle their different member requirements
-		d := document{isRelationship: true}
+		d := document{isRelationship: true, useNumber: ro.useNumber}
 		if err := json.Unmarshal(raw, &d); err != nil {
 			return err
 		}

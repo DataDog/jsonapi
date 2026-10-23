@@ -861,6 +861,13 @@ func TestUnmarshalNumbers(t *testing.T) {
 		err := Unmarshal([]byte(given), &actual, UnmarshalUseNumber())
 		is.MustNoError(t, err)
 		is.Equal(t, []*item{{ID: "1", Int: 9007199254740993, Related: &item{ID: "2", Int: 9007199254740995}}}, actual)
+
+		// attributes inside the relationship data itself
+		given = `{"data":{"type":"items","id":"1","relationships":{"related":{"data":{"type":"items","id":"2","attributes":{"int":9007199254740993}}}}}}`
+		var single item
+		err = Unmarshal([]byte(given), &single, UnmarshalUseNumber())
+		is.MustNoError(t, err)
+		is.Equal(t, item{ID: "1", Related: &item{ID: "2", Int: 9007199254740993}}, single)
 	})
 
 	t.Run("non-integer literal into int64 errors with UnmarshalUseNumber", func(t *testing.T) {
