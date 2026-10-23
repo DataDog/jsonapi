@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/DataDog/jsonapi/internal/is"
@@ -844,6 +846,23 @@ func TestUnmarshalNumbers(t *testing.T) {
 		})
 	}
 
+	t.Run("slice and included resource with UnmarshalUseNumber", func(t *testing.T) {
+		t.Parallel()
+
+		type item struct {
+			ID      string `jsonapi:"primary,items"`
+			Int     int64  `jsonapi:"attribute" json:"int,omitempty"`
+			Related *item  `jsonapi:"relationship" json:"related,omitempty"`
+		}
+		given := `{"data":[{"type":"items","id":"1","attributes":{"int":9007199254740993},"relationships":{"related":{"data":{"type":"items","id":"2"}}}}],` +
+			`"included":[{"type":"items","id":"2","attributes":{"int":9007199254740995}}]}`
+
+		var actual []*item
+		err := Unmarshal([]byte(given), &actual, UnmarshalUseNumber())
+		is.MustNoError(t, err)
+		is.Equal(t, []*item{{ID: "1", Int: 9007199254740993, Related: &item{ID: "2", Int: 9007199254740995}}}, actual)
+	})
+
 	t.Run("non-integer literal into int64 errors with UnmarshalUseNumber", func(t *testing.T) {
 		t.Parallel()
 
@@ -1009,43 +1028,42 @@ func TestUnmarshalMemberNameValidation(t *testing.T) {
 	}
 }
 
+var benchmarkSink any
+
 func BenchmarkUnmarshal(b *testing.B) {
 	benchmarks := []struct {
-		name   string
-		data   string
-		target any
-		opts   []UnmarshalOption
+		name      string
+		data      string
+		newTarget func() any
+		opts      func() []UnmarshalOption
 	}{
 		{
-			name:   "ArticleSimple",
-			data:   articleABody,
-			target: Article{},
-			opts:   nil,
+			name:      "ArticleSimple",
+			data:      articleABody,
+			newTarget: func() any { return new(Article) },
 		}, {
-			name:   "ArticleSimpleWithToplevelMeta",
-			data:   articleAToplevelMetaBody,
-			target: Article{},
-			opts:   []UnmarshalOption{UnmarshalMeta(map[string]any{"foo": "bar"})},
+			name:      "ArticleSimpleWithToplevelMeta",
+			data:      articleAToplevelMetaBody,
+			newTarget: func() any { return new(Article) },
+			opts:      func() []UnmarshalOption { return []UnmarshalOption{UnmarshalMeta(&map[string]any{})} },
 		}, {
-			name:   "ArticleComplex",
-			data:   articleRelatedCommentsNestedWithIncludeBody,
-			target: ArticleRelated{},
-			opts:   nil,
+			name:      "ArticleComplex",
+			data:      articleRelatedCommentsNestedWithIncludeBody,
+			newTarget: func() any { return new(ArticleRelated) },
 		}, {
-			name:   "ArticleComplexDisableNameValidation",
-			data:   articleRelatedCommentsNestedWithIncludeBody,
-			target: ArticleRelated{},
-			opts:   []UnmarshalOption{UnmarshalSetNameValidation(DisableValidation)},
+			name:      "ArticleComplexDisableNameValidation",
+			data:      articleRelatedCommentsNestedWithIncludeBody,
+			newTarget: func() any { return new(ArticleRelated) },
+			opts:      func() []UnmarshalOption { return []UnmarshalOption{UnmarshalSetNameValidation(DisableValidation)} },
 		}, {
-			name:   "ArticlesComplex",
-			data:   articlesRelatedComplexBody,
-			target: []*ArticleRelated{},
-			opts:   nil,
+			name:      "ArticlesComplex",
+			data:      articlesRelatedComplexBody,
+			newTarget: func() any { return new([]*ArticleRelated) },
 		}, {
-			name:   "ArticlesComplexDisableNameValidation",
-			data:   articlesRelatedComplexBody,
-			target: []*ArticleRelated{},
-			opts:   []UnmarshalOption{UnmarshalSetNameValidation(DisableValidation)},
+			name:      "ArticlesComplexDisableNameValidation",
+			data:      articlesRelatedComplexBody,
+			newTarget: func() any { return new([]*ArticleRelated) },
+			opts:      func() []UnmarshalOption { return []UnmarshalOption{UnmarshalSetNameValidation(DisableValidation)} },
 		},
 	}
 
@@ -1055,8 +1073,75 @@ func BenchmarkUnmarshal(b *testing.B) {
 		b.Run(bm.name, func(b *testing.B) {
 			b.ReportAllocs()
 			for n := 0; n < b.N; n++ {
-				_ = Unmarshal(data, &bm.target, bm.opts...)
+				var opts []UnmarshalOption
+				if bm.opts != nil {
+					opts = bm.opts()
+				}
+				target := bm.newTarget()
+				if err := Unmarshal(data, target, opts...); err != nil {
+					b.Fatal(err)
+				}
+				benchmarkSink = target
 			}
 		})
+	}
+}
+
+func BenchmarkUnmarshalNumbers(b *testing.B) {
+	type item struct {
+		ID      string  `jsonapi:"primary,items"`
+		Blob    string  `jsonapi:"attribute" json:"blob,omitempty"`
+		Numbers []int64 `jsonapi:"attribute" json:"numbers,omitempty"`
+		Related *item   `jsonapi:"relationship" json:"related,omitempty"`
+	}
+
+	blob, _ := json.Marshal(strings.Repeat("a", 4096))
+	numbers := make([]string, 1000)
+	for i := range numbers {
+		numbers[i] = strconv.Itoa(i)
+	}
+	shared := make([]string, 32)
+	for i := range shared {
+		shared[i] = `{"type":"items","id":"` + strconv.Itoa(i) + `","relationships":{"related":{"data":{"type":"items","id":"shared"}}}}`
+	}
+
+	benchmarks := []struct {
+		name string
+		data []byte
+		many bool
+	}{
+		{
+			name: "String4KiB",
+			data: []byte(`{"data":{"type":"items","id":"1","attributes":{"blob":` + string(blob) + `}}}`),
+		}, {
+			name: "Numbers1000",
+			data: []byte(`{"data":{"type":"items","id":"1","attributes":{"numbers":[` + strings.Join(numbers, ",") + `]}}}`),
+		}, {
+			name: "SharedIncluded32",
+			data: []byte(`{"data":[` + strings.Join(shared, ",") + `],"included":[{"type":"items","id":"shared","attributes":{"blob":` + string(blob) + `}}]}`),
+			many: true,
+		},
+	}
+
+	for _, mode := range []struct {
+		name string
+		opts []UnmarshalOption
+	}{{"Default", nil}, {"UseNumber", []UnmarshalOption{UnmarshalUseNumber()}}} {
+		for _, bm := range benchmarks {
+			mode, bm := mode, bm
+			b.Run(bm.name+"/"+mode.name, func(b *testing.B) {
+				b.ReportAllocs()
+				for n := 0; n < b.N; n++ {
+					var target any = new(item)
+					if bm.many {
+						target = new([]*item)
+					}
+					if err := Unmarshal(bm.data, target, mode.opts...); err != nil {
+						b.Fatal(err)
+					}
+					benchmarkSink = target
+				}
+			})
+		}
 	}
 }

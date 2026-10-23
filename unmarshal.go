@@ -68,7 +68,6 @@ func (m *Unmarshaler) relationshipUnmarshaler() *Unmarshaler {
 	rm := new(Unmarshaler)
 
 	rm.memberNameValidationMode = m.memberNameValidationMode
-	rm.useNumber = m.useNumber
 	return rm
 }
 
@@ -94,7 +93,7 @@ func Unmarshal(data []byte, v any, opts ...UnmarshalOption) (err error) {
 		return
 	}
 
-	var d document
+	d := document{useNumber: m.useNumber}
 	if err = json.Unmarshal(data, &d); err != nil {
 		return
 	}
@@ -216,7 +215,7 @@ func (ro *resourceObject) unmarshal(v any, m *Unmarshaler) error {
 		return err
 	}
 
-	return ro.unmarshalAttributes(v, m)
+	return ro.unmarshalAttributes(v)
 }
 
 // unmarshalFields unmarshals a resource object into all non-attribute struct fields
@@ -350,26 +349,21 @@ func (ro *resourceObject) unmarshalFields(v any, rv reflect.Value, rt reflect.Ty
 	return nil
 }
 
-func (ro *resourceObject) unmarshalAttributes(v any, m *Unmarshaler) error {
-	if len(ro.rawAttributes) == 0 || bytes.Equal(ro.rawAttributes, []byte("null")) {
-		return nil
-	}
-
-	if m != nil && m.useNumber {
+func (ro *resourceObject) unmarshalAttributes(v any) error {
+	if ro.useNumber {
+		if len(ro.rawAttributes) == 0 || bytes.Equal(ro.rawAttributes, []byte("null")) {
+			return nil
+		}
 		d := json.NewDecoder(bytes.NewReader(ro.rawAttributes))
 		d.UseNumber()
 		return d.Decode(v)
 	}
 
-	var attributes map[string]any
-	if err := json.Unmarshal(ro.rawAttributes, &attributes); err != nil {
-		return err
-	}
-	if len(attributes) == 0 {
+	if len(ro.Attributes) == 0 {
 		return nil
 	}
 
-	b, err := json.Marshal(attributes)
+	b, err := json.Marshal(ro.Attributes)
 	if err != nil {
 		return err
 	}
