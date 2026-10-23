@@ -15,19 +15,42 @@ type resourceObject struct {
 	Relationships map[string]*document `json:"relationships,omitempty"`
 	Meta          any                  `json:"meta,omitempty"`
 	Links         *Link                `json:"links,omitempty"`
+
+	// useNumber keeps the attributes as received in rawAttributes, so UnmarshalUseNumber can decode them
+	// without a float64 round-trip; otherwise they are decoded into Attributes as before.
+	useNumber     bool
+	rawAttributes rawJSON
+}
+
+// rawJSON keeps a reference to the bytes it is decoded from instead of copying them like json.RawMessage.
+// It is only read while Unmarshal runs, so the input is still valid.
+type rawJSON []byte
+
+// UnmarshalJSON implements the json.Unmarshaler interface.
+func (r *rawJSON) UnmarshalJSON(data []byte) error {
+	*r = data
+	return nil
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface.
 func (ro *resourceObject) UnmarshalJSON(data []byte) error {
 	type alias resourceObject
 
-	auxRaw := &struct {
+	type aux struct {
 		Rels map[string]json.RawMessage `json:"relationships,omitempty"`
 		*alias
-	}{
-		alias: (*alias)(ro),
 	}
-	if err := json.Unmarshal(data, &auxRaw); err != nil {
+	auxRaw := &aux{alias: (*alias)(ro)}
+	if ro.useNumber {
+		withRaw := &struct {
+			Attrs rawJSON `json:"attributes,omitempty"`
+			*aux
+		}{aux: auxRaw}
+		if err := json.Unmarshal(data, withRaw); err != nil {
+			return err
+		}
+		ro.rawAttributes = withRaw.Attrs
+	} else if err := json.Unmarshal(data, auxRaw); err != nil {
 		return err
 	}
 
@@ -35,7 +58,7 @@ func (ro *resourceObject) UnmarshalJSON(data []byte) error {
 	for name, raw := range auxRaw.Rels {
 		// mark the created sub-documents as relationships so that the document Unmarshaler
 		// can handle their different member requirements
-		d := document{isRelationship: true}
+		d := document{isRelationship: true, useNumber: ro.useNumber}
 		if err := json.Unmarshal(raw, &d); err != nil {
 			return err
 		}
@@ -143,6 +166,9 @@ type document struct {
 	// isRelationship marks a document as a relationship sub-document (within primary data)
 	isRelationship bool `json:"-"`
 
+	// useNumber is passed to the document's resource objects (see resourceObject.useNumber)
+	useNumber bool `json:"-"`
+
 	// Meta is Meta Information as defined by https://jsonapi.org/format/1.0/#document-meta.
 	Meta any `json:"meta,omitempty"`
 
@@ -199,14 +225,27 @@ func (d *document) MarshalJSON() ([]byte, error) {
 // UnmarshalJSON implements the json.Unmarshaler interface.
 func (d *document) UnmarshalJSON(data []byte) error {
 	type alias document
-
-	auxRaw := &struct {
+	type aux struct {
 		Data json.RawMessage `json:"data,omitempty"`
 		*alias
-	}{
-		alias: (*alias)(d),
 	}
-	if err := json.Unmarshal(data, &auxRaw); err != nil {
+
+	auxRaw := &aux{alias: (*alias)(d)}
+	if d.useNumber {
+		// decode included resources one by one so they carry useNumber
+		withRaw := &struct {
+			Included []rawJSON `json:"included,omitempty"`
+			*aux
+		}{aux: auxRaw}
+		if err := json.Unmarshal(data, withRaw); err != nil {
+			return err
+		}
+		included, err := d.unmarshalResourceObjects(withRaw.Included)
+		if err != nil {
+			return err
+		}
+		d.Included = included
+	} else if err := json.Unmarshal(data, auxRaw); err != nil {
 		return err
 	}
 
@@ -231,9 +270,39 @@ func (d *document) UnmarshalJSON(data []byte) error {
 
 	if auxRaw.Data[0] == '[' {
 		d.hasMany = true
-		return json.Unmarshal(auxRaw.Data, &auxRaw.DataMany)
+		if !d.useNumber {
+			return json.Unmarshal(auxRaw.Data, &auxRaw.DataMany)
+		}
+		var raws []rawJSON
+		if err := json.Unmarshal(auxRaw.Data, &raws); err != nil {
+			return err
+		}
+		many, err := d.unmarshalResourceObjects(raws)
+		if err != nil {
+			return err
+		}
+		d.DataMany = many
+		return nil
+	}
+	if d.useNumber {
+		d.DataOne = &resourceObject{useNumber: true}
 	}
 	return json.Unmarshal(auxRaw.Data, &auxRaw.DataOne)
+}
+
+// unmarshalResourceObjects decodes each raw resource object with d.useNumber.
+func (d *document) unmarshalResourceObjects(raws []rawJSON) ([]*resourceObject, error) {
+	if raws == nil {
+		return nil, nil
+	}
+	ros := make([]*resourceObject, len(raws))
+	for i, raw := range raws {
+		ros[i] = &resourceObject{useNumber: d.useNumber}
+		if err := json.Unmarshal(raw, ros[i]); err != nil {
+			return nil, err
+		}
+	}
+	return ros, nil
 }
 
 // isEmpty returns true if there is no primary data in the given document (i.e. null or []).

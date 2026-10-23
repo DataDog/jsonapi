@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/DataDog/jsonapi/internal/is"
@@ -764,6 +766,120 @@ func TestUnmarshalLinks(t *testing.T) {
 	}
 }
 
+func TestUnmarshalNumbers(t *testing.T) {
+	t.Parallel()
+
+	type nested struct {
+		Max int64 `json:"max"`
+	}
+	type numbers struct {
+		ID     string         `jsonapi:"primary,numbers"`
+		Int    int64          `jsonapi:"attribute" json:"int,omitempty"`
+		Uint   uint64         `jsonapi:"attribute" json:"uint,omitempty"`
+		Float  float64        `jsonapi:"attribute" json:"float,omitempty"`
+		Nested *nested        `jsonapi:"attribute" json:"nested,omitempty"`
+		List   []int64        `jsonapi:"attribute" json:"list,omitempty"`
+		Values map[string]any `jsonapi:"attribute" json:"values,omitempty"`
+	}
+	type item struct {
+		ID      string `jsonapi:"primary,items"`
+		Int     int64  `jsonapi:"attribute" json:"int,omitempty"`
+		Related *item  `jsonapi:"relationship" json:"related,omitempty"`
+	}
+
+	unmarshalNumbers := func(attributes string, opts ...UnmarshalOption) (any, error) {
+		var n numbers
+		err := Unmarshal([]byte(`{"data":{"type":"numbers","id":"1","attributes":`+attributes+`}}`), &n, opts...)
+		return &n, err
+	}
+	itemsWithIncludedBody := `{"data":[{"type":"items","id":"1","attributes":{"int":9007199254740993},"relationships":{"related":{"data":{"type":"items","id":"2"}}}}],` +
+		`"included":[{"type":"items","id":"2","attributes":{"int":9007199254740995}}]}`
+	itemWithRelationshipAttributesBody := `{"data":{"type":"items","id":"1","relationships":{"related":{"data":{"type":"items","id":"2","attributes":{"int":9007199254740993}}}}}}`
+
+	tests := []struct {
+		description string
+		do          func() (any, error)
+		expect      any
+		expectError error
+	}{
+		{
+			description: "int64 above 2^53 rounds",
+			do:          func() (any, error) { return unmarshalNumbers(`{"int":9007199254740993}`) },
+			expect:      &numbers{ID: "1", Int: 9007199254740992},
+		}, {
+			description: "non-integer literals with integer values decode into int64",
+			do:          func() (any, error) { return unmarshalNumbers(`{"int":100.0,"list":[1e2]}`) },
+			expect:      &numbers{ID: "1", Int: 100, List: []int64{100}},
+		}, {
+			description: "map[string]any values are float64",
+			do:          func() (any, error) { return unmarshalNumbers(`{"values":{"int":9007199254740993,"float":1.5}}`) },
+			expect:      &numbers{ID: "1", Values: map[string]any{"int": float64(9007199254740992), "float": 1.5}},
+		}, {
+			description: "int64 above 2^53 with UnmarshalUseNumber",
+			do:          func() (any, error) { return unmarshalNumbers(`{"int":9007199254740993}`, UnmarshalUseNumber()) },
+			expect:      &numbers{ID: "1", Int: 9007199254740993},
+		}, {
+			description: "uint64 max with UnmarshalUseNumber",
+			do:          func() (any, error) { return unmarshalNumbers(`{"uint":18446744073709551615}`, UnmarshalUseNumber()) },
+			expect:      &numbers{ID: "1", Uint: 18446744073709551615},
+		}, {
+			description: "int64 min and max in nested struct and slice with UnmarshalUseNumber",
+			do: func() (any, error) {
+				return unmarshalNumbers(`{"nested":{"max":9223372036854775807},"list":[-9223372036854775808,9007199254740993]}`, UnmarshalUseNumber())
+			},
+			expect: &numbers{ID: "1", Nested: &nested{Max: 9223372036854775807}, List: []int64{-9223372036854775808, 9007199254740993}},
+		}, {
+			description: "integer above 2^53 into float64 rounds with UnmarshalUseNumber",
+			do:          func() (any, error) { return unmarshalNumbers(`{"float":9007199254740993}`, UnmarshalUseNumber()) },
+			expect:      &numbers{ID: "1", Float: 9007199254740992},
+		}, {
+			description: "map[string]any values are json.Number with UnmarshalUseNumber",
+			do: func() (any, error) {
+				return unmarshalNumbers(`{"values":{"int":9007199254740993,"float":1.5}}`, UnmarshalUseNumber())
+			},
+			expect: &numbers{ID: "1", Values: map[string]any{"int": json.Number("9007199254740993"), "float": json.Number("1.5")}},
+		}, {
+			description: "non-integer literal into int64 errors with UnmarshalUseNumber",
+			do:          func() (any, error) { return unmarshalNumbers(`{"int":100.0}`, UnmarshalUseNumber()) },
+			expect:      &numbers{ID: "1"},
+			expectError: &json.UnmarshalTypeError{Value: "number 100.0", Type: reflect.TypeOf(int64(0)), Struct: "numbers", Field: "int"},
+		}, {
+			description: "[]*item with included resource with UnmarshalUseNumber",
+			do: func() (any, error) {
+				var items []*item
+				err := Unmarshal([]byte(itemsWithIncludedBody), &items, UnmarshalUseNumber())
+				return items, err
+			},
+			expect: []*item{{ID: "1", Int: 9007199254740993, Related: &item{ID: "2", Int: 9007199254740995}}},
+		}, {
+			description: "*item with attributes in relationship data with UnmarshalUseNumber",
+			do: func() (any, error) {
+				var i item
+				err := Unmarshal([]byte(itemWithRelationshipAttributesBody), &i, UnmarshalUseNumber())
+				return &i, err
+			},
+			expect: &item{ID: "1", Related: &item{ID: "2", Int: 9007199254740993}},
+		},
+	}
+
+	for i, tc := range tests {
+		tc := tc
+		t.Run(fmt.Sprintf("%02d", i), func(t *testing.T) {
+			t.Parallel()
+			t.Log(tc.description)
+
+			actual, err := tc.do()
+			if tc.expectError != nil {
+				is.EqualError(t, tc.expectError, err)
+				is.Equal(t, tc.expect, actual)
+				return
+			}
+			is.MustNoError(t, err)
+			is.Equal(t, tc.expect, actual)
+		})
+	}
+}
+
 // TestUnmarshalMemberNameValidation collects tests which verify that invalid member names are
 // caught during unmarshaling, no matter where they're placed. This test does not exhaustively test
 // every possible invalid name.
@@ -920,43 +1036,42 @@ func TestUnmarshalMemberNameValidation(t *testing.T) {
 	}
 }
 
+var benchmarkSink any
+
 func BenchmarkUnmarshal(b *testing.B) {
 	benchmarks := []struct {
-		name   string
-		data   string
-		target any
-		opts   []UnmarshalOption
+		name      string
+		data      string
+		newTarget func() any
+		opts      func() []UnmarshalOption
 	}{
 		{
-			name:   "ArticleSimple",
-			data:   articleABody,
-			target: Article{},
-			opts:   nil,
+			name:      "ArticleSimple",
+			data:      articleABody,
+			newTarget: func() any { return new(Article) },
 		}, {
-			name:   "ArticleSimpleWithToplevelMeta",
-			data:   articleAToplevelMetaBody,
-			target: Article{},
-			opts:   []UnmarshalOption{UnmarshalMeta(map[string]any{"foo": "bar"})},
+			name:      "ArticleSimpleWithToplevelMeta",
+			data:      articleAToplevelMetaBody,
+			newTarget: func() any { return new(Article) },
+			opts:      func() []UnmarshalOption { return []UnmarshalOption{UnmarshalMeta(&map[string]any{})} },
 		}, {
-			name:   "ArticleComplex",
-			data:   articleRelatedCommentsNestedWithIncludeBody,
-			target: ArticleRelated{},
-			opts:   nil,
+			name:      "ArticleComplex",
+			data:      articleRelatedCommentsNestedWithIncludeBody,
+			newTarget: func() any { return new(ArticleRelated) },
 		}, {
-			name:   "ArticleComplexDisableNameValidation",
-			data:   articleRelatedCommentsNestedWithIncludeBody,
-			target: ArticleRelated{},
-			opts:   []UnmarshalOption{UnmarshalSetNameValidation(DisableValidation)},
+			name:      "ArticleComplexDisableNameValidation",
+			data:      articleRelatedCommentsNestedWithIncludeBody,
+			newTarget: func() any { return new(ArticleRelated) },
+			opts:      func() []UnmarshalOption { return []UnmarshalOption{UnmarshalSetNameValidation(DisableValidation)} },
 		}, {
-			name:   "ArticlesComplex",
-			data:   articlesRelatedComplexBody,
-			target: []*ArticleRelated{},
-			opts:   nil,
+			name:      "ArticlesComplex",
+			data:      articlesRelatedComplexBody,
+			newTarget: func() any { return new([]*ArticleRelated) },
 		}, {
-			name:   "ArticlesComplexDisableNameValidation",
-			data:   articlesRelatedComplexBody,
-			target: []*ArticleRelated{},
-			opts:   []UnmarshalOption{UnmarshalSetNameValidation(DisableValidation)},
+			name:      "ArticlesComplexDisableNameValidation",
+			data:      articlesRelatedComplexBody,
+			newTarget: func() any { return new([]*ArticleRelated) },
+			opts:      func() []UnmarshalOption { return []UnmarshalOption{UnmarshalSetNameValidation(DisableValidation)} },
 		},
 	}
 
@@ -966,8 +1081,75 @@ func BenchmarkUnmarshal(b *testing.B) {
 		b.Run(bm.name, func(b *testing.B) {
 			b.ReportAllocs()
 			for n := 0; n < b.N; n++ {
-				_ = Unmarshal(data, &bm.target, bm.opts...)
+				var opts []UnmarshalOption
+				if bm.opts != nil {
+					opts = bm.opts()
+				}
+				target := bm.newTarget()
+				if err := Unmarshal(data, target, opts...); err != nil {
+					b.Fatal(err)
+				}
+				benchmarkSink = target
 			}
 		})
+	}
+}
+
+func BenchmarkUnmarshalNumbers(b *testing.B) {
+	type item struct {
+		ID      string  `jsonapi:"primary,items"`
+		Blob    string  `jsonapi:"attribute" json:"blob,omitempty"`
+		Numbers []int64 `jsonapi:"attribute" json:"numbers,omitempty"`
+		Related *item   `jsonapi:"relationship" json:"related,omitempty"`
+	}
+
+	blob, _ := json.Marshal(strings.Repeat("a", 4096))
+	numbers := make([]string, 1000)
+	for i := range numbers {
+		numbers[i] = strconv.Itoa(i)
+	}
+	shared := make([]string, 32)
+	for i := range shared {
+		shared[i] = `{"type":"items","id":"` + strconv.Itoa(i) + `","relationships":{"related":{"data":{"type":"items","id":"shared"}}}}`
+	}
+
+	benchmarks := []struct {
+		name string
+		data []byte
+		many bool
+	}{
+		{
+			name: "String4KiB",
+			data: []byte(`{"data":{"type":"items","id":"1","attributes":{"blob":` + string(blob) + `}}}`),
+		}, {
+			name: "Numbers1000",
+			data: []byte(`{"data":{"type":"items","id":"1","attributes":{"numbers":[` + strings.Join(numbers, ",") + `]}}}`),
+		}, {
+			name: "SharedIncluded32",
+			data: []byte(`{"data":[` + strings.Join(shared, ",") + `],"included":[{"type":"items","id":"shared","attributes":{"blob":` + string(blob) + `}}]}`),
+			many: true,
+		},
+	}
+
+	for _, mode := range []struct {
+		name string
+		opts []UnmarshalOption
+	}{{"Default", nil}, {"UseNumber", []UnmarshalOption{UnmarshalUseNumber()}}} {
+		for _, bm := range benchmarks {
+			mode, bm := mode, bm
+			b.Run(bm.name+"/"+mode.name, func(b *testing.B) {
+				b.ReportAllocs()
+				for n := 0; n < b.N; n++ {
+					var target any = new(item)
+					if bm.many {
+						target = new([]*item)
+					}
+					if err := Unmarshal(bm.data, target, mode.opts...); err != nil {
+						b.Fatal(err)
+					}
+					benchmarkSink = target
+				}
+			})
+		}
 	}
 }

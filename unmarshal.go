@@ -1,6 +1,7 @@
 package jsonapi
 
 import (
+	"bytes"
 	"encoding"
 	"encoding/json"
 	"errors"
@@ -13,6 +14,7 @@ type Unmarshaler struct {
 	unmarshalMeta            bool
 	unmarshalLinks           bool
 	checkUniqueness          bool
+	useNumber                bool
 	meta                     any
 	links                    *Link
 	memberNameValidationMode MemberNameValidationMode
@@ -41,6 +43,15 @@ func UnmarshalLinks(link *Link) UnmarshalOption {
 func UnmarshalCheckUniqueness() UnmarshalOption {
 	return func(m *Unmarshaler) {
 		m.checkUniqueness = true
+	}
+}
+
+// UnmarshalUseNumber decodes attributes directly with json.Number, so integers above 2^53 keep every digit
+// in typed fields and interface{} values (e.g. map[string]any) hold json.Number instead of float64.
+// Non-integer literals such as 100.0 no longer decode into integer fields.
+func UnmarshalUseNumber() UnmarshalOption {
+	return func(m *Unmarshaler) {
+		m.useNumber = true
 	}
 }
 
@@ -82,7 +93,7 @@ func Unmarshal(data []byte, v any, opts ...UnmarshalOption) (err error) {
 		return
 	}
 
-	var d document
+	d := document{useNumber: m.useNumber}
 	if err = json.Unmarshal(data, &d); err != nil {
 		return
 	}
@@ -339,6 +350,15 @@ func (ro *resourceObject) unmarshalFields(v any, rv reflect.Value, rt reflect.Ty
 }
 
 func (ro *resourceObject) unmarshalAttributes(v any) error {
+	if ro.useNumber {
+		if len(ro.rawAttributes) == 0 || bytes.Equal(ro.rawAttributes, []byte("null")) {
+			return nil
+		}
+		d := json.NewDecoder(bytes.NewReader(ro.rawAttributes))
+		d.UseNumber()
+		return d.Decode(v)
+	}
+
 	if len(ro.Attributes) == 0 {
 		return nil
 	}
