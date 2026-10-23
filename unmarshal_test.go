@@ -781,55 +781,84 @@ func TestUnmarshalNumbers(t *testing.T) {
 		List   []int64        `jsonapi:"attribute" json:"list,omitempty"`
 		Values map[string]any `jsonapi:"attribute" json:"values,omitempty"`
 	}
-
-	body := func(attributes string) []byte {
-		return []byte(`{"data":{"type":"numbers","id":"1","attributes":` + attributes + `}}`)
+	type item struct {
+		ID      string `jsonapi:"primary,items"`
+		Int     int64  `jsonapi:"attribute" json:"int,omitempty"`
+		Related *item  `jsonapi:"relationship" json:"related,omitempty"`
 	}
-	useNumber := []UnmarshalOption{UnmarshalUseNumber()}
+
+	unmarshalNumbers := func(attributes string, opts ...UnmarshalOption) (any, error) {
+		var n numbers
+		err := Unmarshal([]byte(`{"data":{"type":"numbers","id":"1","attributes":`+attributes+`}}`), &n, opts...)
+		return &n, err
+	}
+	itemsWithIncludedBody := `{"data":[{"type":"items","id":"1","attributes":{"int":9007199254740993},"relationships":{"related":{"data":{"type":"items","id":"2"}}}}],` +
+		`"included":[{"type":"items","id":"2","attributes":{"int":9007199254740995}}]}`
+	itemWithRelationshipAttributesBody := `{"data":{"type":"items","id":"1","relationships":{"related":{"data":{"type":"items","id":"2","attributes":{"int":9007199254740993}}}}}}`
 
 	tests := []struct {
 		description string
-		given       []byte
-		opts        []UnmarshalOption
+		do          func() (any, error)
 		expect      any
+		expectError error
 	}{
 		{
 			description: "int64 above 2^53 rounds",
-			given:       body(`{"int":9007199254740993}`),
+			do:          func() (any, error) { return unmarshalNumbers(`{"int":9007199254740993}`) },
 			expect:      &numbers{ID: "1", Int: 9007199254740992},
 		}, {
 			description: "non-integer literals with integer values decode into int64",
-			given:       body(`{"int":100.0,"list":[1e2]}`),
+			do:          func() (any, error) { return unmarshalNumbers(`{"int":100.0,"list":[1e2]}`) },
 			expect:      &numbers{ID: "1", Int: 100, List: []int64{100}},
 		}, {
 			description: "map[string]any values are float64",
-			given:       body(`{"values":{"int":9007199254740993,"float":1.5}}`),
+			do:          func() (any, error) { return unmarshalNumbers(`{"values":{"int":9007199254740993,"float":1.5}}`) },
 			expect:      &numbers{ID: "1", Values: map[string]any{"int": float64(9007199254740992), "float": 1.5}},
 		}, {
 			description: "int64 above 2^53 with UnmarshalUseNumber",
-			given:       body(`{"int":9007199254740993}`),
-			opts:        useNumber,
+			do:          func() (any, error) { return unmarshalNumbers(`{"int":9007199254740993}`, UnmarshalUseNumber()) },
 			expect:      &numbers{ID: "1", Int: 9007199254740993},
 		}, {
 			description: "uint64 max with UnmarshalUseNumber",
-			given:       body(`{"uint":18446744073709551615}`),
-			opts:        useNumber,
+			do:          func() (any, error) { return unmarshalNumbers(`{"uint":18446744073709551615}`, UnmarshalUseNumber()) },
 			expect:      &numbers{ID: "1", Uint: 18446744073709551615},
 		}, {
 			description: "int64 min and max in nested struct and slice with UnmarshalUseNumber",
-			given:       body(`{"nested":{"max":9223372036854775807},"list":[-9223372036854775808,9007199254740993]}`),
-			opts:        useNumber,
-			expect:      &numbers{ID: "1", Nested: &nested{Max: 9223372036854775807}, List: []int64{-9223372036854775808, 9007199254740993}},
+			do: func() (any, error) {
+				return unmarshalNumbers(`{"nested":{"max":9223372036854775807},"list":[-9223372036854775808,9007199254740993]}`, UnmarshalUseNumber())
+			},
+			expect: &numbers{ID: "1", Nested: &nested{Max: 9223372036854775807}, List: []int64{-9223372036854775808, 9007199254740993}},
 		}, {
 			description: "integer above 2^53 into float64 rounds with UnmarshalUseNumber",
-			given:       body(`{"float":9007199254740993}`),
-			opts:        useNumber,
+			do:          func() (any, error) { return unmarshalNumbers(`{"float":9007199254740993}`, UnmarshalUseNumber()) },
 			expect:      &numbers{ID: "1", Float: 9007199254740992},
 		}, {
 			description: "map[string]any values are json.Number with UnmarshalUseNumber",
-			given:       body(`{"values":{"int":9007199254740993,"float":1.5}}`),
-			opts:        useNumber,
-			expect:      &numbers{ID: "1", Values: map[string]any{"int": json.Number("9007199254740993"), "float": json.Number("1.5")}},
+			do: func() (any, error) {
+				return unmarshalNumbers(`{"values":{"int":9007199254740993,"float":1.5}}`, UnmarshalUseNumber())
+			},
+			expect: &numbers{ID: "1", Values: map[string]any{"int": json.Number("9007199254740993"), "float": json.Number("1.5")}},
+		}, {
+			description: "non-integer literal into int64 errors with UnmarshalUseNumber",
+			do:          func() (any, error) { return unmarshalNumbers(`{"int":100.0}`, UnmarshalUseNumber()) },
+			expect:      &numbers{ID: "1"},
+			expectError: &json.UnmarshalTypeError{Value: "number 100.0", Type: reflect.TypeOf(int64(0)), Struct: "numbers", Field: "int"},
+		}, {
+			description: "[]*item with included resource with UnmarshalUseNumber",
+			do: func() (any, error) {
+				var items []*item
+				err := Unmarshal([]byte(itemsWithIncludedBody), &items, UnmarshalUseNumber())
+				return items, err
+			},
+			expect: []*item{{ID: "1", Int: 9007199254740993, Related: &item{ID: "2", Int: 9007199254740995}}},
+		}, {
+			description: "*item with attributes in relationship data with UnmarshalUseNumber",
+			do: func() (any, error) {
+				var i item
+				err := Unmarshal([]byte(itemWithRelationshipAttributesBody), &i, UnmarshalUseNumber())
+				return &i, err
+			},
+			expect: &item{ID: "1", Related: &item{ID: "2", Int: 9007199254740993}},
 		},
 	}
 
@@ -839,44 +868,16 @@ func TestUnmarshalNumbers(t *testing.T) {
 			t.Parallel()
 			t.Log(tc.description)
 
-			var actual numbers
-			err := Unmarshal(tc.given, &actual, tc.opts...)
+			actual, err := tc.do()
+			if tc.expectError != nil {
+				is.EqualError(t, tc.expectError, err)
+				is.Equal(t, tc.expect, actual)
+				return
+			}
 			is.MustNoError(t, err)
-			is.Equal(t, tc.expect, &actual)
+			is.Equal(t, tc.expect, actual)
 		})
 	}
-
-	t.Run("slice and included resource with UnmarshalUseNumber", func(t *testing.T) {
-		t.Parallel()
-
-		type item struct {
-			ID      string `jsonapi:"primary,items"`
-			Int     int64  `jsonapi:"attribute" json:"int,omitempty"`
-			Related *item  `jsonapi:"relationship" json:"related,omitempty"`
-		}
-		given := `{"data":[{"type":"items","id":"1","attributes":{"int":9007199254740993},"relationships":{"related":{"data":{"type":"items","id":"2"}}}}],` +
-			`"included":[{"type":"items","id":"2","attributes":{"int":9007199254740995}}]}`
-
-		var actual []*item
-		err := Unmarshal([]byte(given), &actual, UnmarshalUseNumber())
-		is.MustNoError(t, err)
-		is.Equal(t, []*item{{ID: "1", Int: 9007199254740993, Related: &item{ID: "2", Int: 9007199254740995}}}, actual)
-
-		// attributes inside the relationship data itself
-		given = `{"data":{"type":"items","id":"1","relationships":{"related":{"data":{"type":"items","id":"2","attributes":{"int":9007199254740993}}}}}}`
-		var single item
-		err = Unmarshal([]byte(given), &single, UnmarshalUseNumber())
-		is.MustNoError(t, err)
-		is.Equal(t, item{ID: "1", Related: &item{ID: "2", Int: 9007199254740993}}, single)
-	})
-
-	t.Run("non-integer literal into int64 errors with UnmarshalUseNumber", func(t *testing.T) {
-		t.Parallel()
-
-		var actual numbers
-		err := Unmarshal(body(`{"int":100.0}`), &actual, UnmarshalUseNumber())
-		is.Error(t, err)
-	})
 }
 
 // TestUnmarshalMemberNameValidation collects tests which verify that invalid member names are
